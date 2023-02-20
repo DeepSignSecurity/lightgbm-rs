@@ -1,6 +1,18 @@
 # lightgbm-rs
 LightGBM Rust binding
 
+# About this Fork
+
+This is an opinionated fork of [vaaaaanquish/lightgbm-rs](https://github.com/vaaaaanquish/lightgbm-rs) to fit needs at DeepSignSecurity. Generally we try to first offer fixes as PR to upstream, before merging them into `main` here. Exceptions apply for changes vaaaaanquish has already expressed no interest in, or that depend on other changes upstream hasn't accepted yet.
+
+List of changes in `main`:
+
+- [x] Merge vaaaaanquish/lightgbm-rs#35 (Fix truncated feature names)
+- [x] Merge vaaaaanquish/lightgbm-rs#36 (add save_file_size api)
+- [x] Merge vaaaaanquish/lightgbm-rs#37 (add load_string and save_string apis)
+- [x] Merge vaaaaanquish/lightgbm-rs#43 (Set weights, but with more sanity checks and unit tests)
+- [x] Switch to upstream microsoft/lightgbm
+- [x] Merge vaaaaanquish/lightgbm-rs#44 (configure C++11 even more explicitly as suggested in vaaaaanquish/lightgbm-rs#40)
 
 # Require
 
