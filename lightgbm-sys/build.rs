@@ -59,6 +59,11 @@ fn main() {
     if target.contains("apple") {
         println!("cargo:rustc-link-lib=c++");
         println!("cargo:rustc-link-lib=dylib=omp");
+        // Link to libomp
+        // If it fails to compile in MacOS, try:
+        // `brew install libomp`
+        // `brew link --force libomp`
+        println!("cargo:rustc-link-search=/opt/homebrew/opt/libomp/lib");
     } else if target.contains("linux") {
         println!("cargo:rustc-link-lib=stdc++");
         println!("cargo:rustc-link-lib=dylib=gomp");
