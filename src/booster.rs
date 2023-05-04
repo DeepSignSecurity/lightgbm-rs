@@ -69,9 +69,9 @@ impl Booster {
     ///         "metric": "auc"
     ///     }
     /// };
-    /// let bst = Booster::train(dataset, &params).unwrap();
+    /// let bst = Booster::train(dataset, None, &params).unwrap();
     /// ```
-    pub fn train(dataset: Dataset, parameter: &Value) -> Result<Self> {
+    pub fn train(train_data: Dataset, val_data: Option<Dataset> ,parameter: &Value) -> Result<Self> {
         // get num_iterations
         let num_iterations: i64 = if parameter["num_iterations"].is_null() {
             100
@@ -91,7 +91,7 @@ impl Booster {
 
         let mut handle = std::ptr::null_mut();
         lgbm_call!(lightgbm_sys::LGBM_BoosterCreate(
-            dataset.handle,
+            train_data.handle,
             params_cstring.as_ptr() as *const c_char,
             &mut handle
         ))?;
@@ -307,7 +307,7 @@ mod tests {
 
     fn _train_booster(params: &Value) -> Booster {
         let dataset = _read_train_file().unwrap();
-        Booster::train(dataset, &params).unwrap()
+        Booster::train(dataset, None, &params).unwrap()
     }
 
     fn _default_params() -> Value {

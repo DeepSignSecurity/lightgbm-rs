@@ -16,3 +16,5 @@ lightgbm-sys/target
 examples/binary_classification/target/
 examples/multiclass_classification/target/
 examples/regression/target/
+
+.idea
