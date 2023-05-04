@@ -1,4 +1,4 @@
-use libc::{c_char, c_double, c_int, c_longlong, c_void};
+use libc::{c_char, c_double, c_longlong, c_void};
 use std;
 use std::convert::TryInto;
 use std::ffi::CString;
@@ -238,10 +238,19 @@ impl Booster {
         Ok(output)
     }
 
-    
-    /// return the name of up to 20 evaluation metrics that were used
-    pub fn get_eval_names(&self) -> Result<Vec<String>> {
-        let num_metrics = 20;
+    /// Get number of evaluation metrics
+    pub fn num_eval(&self) -> Result<i32> {
+        let mut out_len = 0;
+        lgbm_call!(lightgbm_sys::LGBM_BoosterGetEvalCounts(
+            self.handle,
+            &mut out_len
+        ))?;
+        Ok(out_len)
+    }
+
+    /// Get names of evaluation metrics
+    pub fn eval_names(&self) -> Result<Vec<String>> {
+        let num_metrics = self.num_eval()?;
         let feature_name_length = 32;
         let mut num_eval_names = 0;
         let mut out_buffer_len = 0;
@@ -420,11 +429,13 @@ mod tests {
     }
 
     #[test]
-    fn get_eval_names() {
-        let params = _default_params();
+    fn eval_names() {
+        let mut params = _default_params();
+        params["metric"] = serde_json::Value::from(vec!["auc", "acc"]);
+        println!("{}", params);
         let bst = _train_booster(&params);
-        let eval_names = bst.get_eval_names().unwrap();
-        assert_eq!(eval_names, vec!["auc"])
+        let eval_names = bst.eval_names().unwrap();
+        assert_eq!(eval_names, vec!["auc", "acc"])
     }
 
     #[test]
