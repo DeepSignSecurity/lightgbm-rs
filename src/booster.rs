@@ -1,4 +1,4 @@
-use libc::{c_char, c_double, c_longlong, c_void};
+use libc::{c_char, c_double, c_int, c_longlong, c_void};
 use std;
 use std::convert::TryInto;
 use std::ffi::CString;
@@ -71,7 +71,38 @@ impl Booster {
     /// };
     /// let bst = Booster::train(dataset, None, &params).unwrap();
     /// ```
-    pub fn train(train_data: Dataset, val_data: Option<Dataset> ,parameter: &Value) -> Result<Self> {
+    /// Validation data can be provided aswell.
+    /// ```
+    /// extern crate serde_json;
+    /// use lightgbm::{Dataset, Booster};
+    /// use serde_json::json;
+    ///
+    /// let data = vec![vec![1.0, 0.1, 0.2, 0.1],
+    ///                vec![0.7, 0.4, 0.5, 0.1],
+    ///                vec![0.9, 0.8, 0.5, 0.1],
+    ///                vec![0.2, 0.2, 0.8, 0.7],
+    ///                vec![0.1, 0.7, 1.0, 0.9]];
+    /// let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// let train_data = Dataset::from_mat(data, label).unwrap();
+    ///
+    /// let data = vec![
+    ///     vec![0.9, 0.6, 0.2, 0.1],
+    ///     vec![0.5, 0.7, 0.2, 0.1],
+    ///     vec![0.2, 0.1, 0.6, 0.8]];
+    /// let label = vec![0.0, 0.0, 1.0];
+    /// let val_data = Dataset::from_mat(data, label);
+    ///
+    /// let params = json!{
+    ///    {
+    ///         "num_iterations": 3,
+    ///         "objective": "binary",
+    ///         "metric": "auc"
+    ///     }
+    /// };
+    ///
+    /// let bst = Booster::train(train_data, val_data.ok(), &params).unwrap();
+    /// ```
+    pub fn train(train_data: Dataset, val_data: Option<Dataset>, parameter: &Value) -> Result<Self> {
         // get num_iterations
         let num_iterations: i64 = if parameter["num_iterations"].is_null() {
             100
@@ -95,6 +126,13 @@ impl Booster {
             params_cstring.as_ptr() as *const c_char,
             &mut handle
         ))?;
+
+        if let Some(validation_data) = val_data {
+            lgbm_call!(lightgbm_sys::LGBM_BoosterAddValidData(
+                handle,
+                validation_data.handle
+            ))?;
+        }
 
         let mut is_finished: i32 = 0;
         for _ in 1..num_iterations {
@@ -199,6 +237,37 @@ impl Booster {
             .collect();
         Ok(output)
     }
+
+    
+    /// return the name of up to 20 evaluation metrics that were used
+    pub fn get_eval_names(&self) -> Result<Vec<String>> {
+        let num_metrics = 20;
+        let feature_name_length = 32;
+        let mut num_eval_names = 0;
+        let mut out_buffer_len = 0;
+        let out_strs = (0..num_metrics)
+            .map(|_| {
+                CString::new(" ".repeat(feature_name_length))
+                    .unwrap()
+                    .into_raw() as *mut c_char
+            })
+            .collect::<Vec<_>>();
+        lgbm_call!(lightgbm_sys::LGBM_BoosterGetEvalNames(
+            self.handle,
+            num_metrics as i32,
+            &mut num_eval_names,
+            feature_name_length as u64,
+            &mut out_buffer_len,
+            out_strs.as_ptr() as *mut *mut c_char
+        ))?;
+        let output: Vec<String> = out_strs
+            .into_iter()
+            .map(|s| unsafe { CString::from_raw(s).into_string().unwrap() })
+            .take(num_eval_names as usize)
+            .collect();
+        Ok(output)
+    }
+
 
     // Get Feature Importance
     pub fn feature_importance(&self) -> Result<Vec<f64>> {
@@ -348,6 +417,14 @@ mod tests {
         let bst = _train_booster(&params);
         let num_feature = bst.num_feature().unwrap();
         assert_eq!(num_feature, 28);
+    }
+
+    #[test]
+    fn get_eval_names() {
+        let params = _default_params();
+        let bst = _train_booster(&params);
+        let eval_names = bst.get_eval_names().unwrap();
+        assert_eq!(eval_names, vec!["auc"])
     }
 
     #[test]
