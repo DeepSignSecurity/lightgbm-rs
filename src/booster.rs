@@ -131,7 +131,7 @@ impl Booster {
                     let v_formatted = a.iter().map(|x| x.to_string() + ",").collect::<String>();
                     let v_formatted = v_formatted
                         .replace("\",\"", ",")
-                        .trim_end_matches(",")
+                        .trim_end_matches(',')
                         .to_string();
                     (k, v_formatted)
                 }
@@ -285,7 +285,7 @@ impl Booster {
             .collect::<Vec<_>>();
         lgbm_call!(lightgbm_sys::LGBM_BoosterGetEvalNames(
             self.handle,
-            num_metrics as i32,
+            num_metrics,
             &mut num_eval_names,
             metric_name_length as u64,
             &mut out_buffer_len,
