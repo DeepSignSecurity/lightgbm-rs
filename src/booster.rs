@@ -1,11 +1,10 @@
-use libc::{c_char, c_double, c_longlong, c_void};
 use std;
 use std::convert::TryInto;
 use std::ffi::CString;
 
-use serde_json::Value;
-
+use libc::{c_char, c_double, c_longlong, c_void};
 use lightgbm_sys;
+use serde_json::{Value};
 
 use crate::{Dataset, Error, Result};
 
@@ -115,6 +114,16 @@ impl Booster {
             .as_object()
             .unwrap()
             .iter()
+            .map(|(k, v)|
+             match v {
+                Value::Array(a) => {
+                    let v_formatted = a.iter().map(|x| x.to_string() + ",").collect::<String>();
+                    let v_formatted = v_formatted.replace("\",\"", ",")
+                        .trim_end_matches(",").to_string();
+                    (k, v_formatted)
+                },
+                _ => (k, v.to_string())
+             })
             .map(|(k, v)| format!("{}={}", k, v))
             .collect::<Vec<_>>()
             .join(" ");
@@ -374,10 +383,12 @@ impl Drop for Booster {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use serde_json::json;
     use std::fs;
     use std::path::Path;
+
+    use serde_json::json;
+
+    use super::*;
 
     fn _read_train_file() -> Result<Dataset> {
         Dataset::from_file(&"lightgbm-sys/lightgbm/examples/binary_classification/binary.train")
@@ -430,12 +441,18 @@ mod tests {
 
     #[test]
     fn eval_names() {
-        let mut params = _default_params();
-        params["metric"] = serde_json::Value::from(vec!["auc", "acc"]);
+        let params = json! {
+            {
+                "num_iterations": 10,
+                "objective": "binary",
+                "metric": ["auc", "l1"],
+                "data_random_seed": 0
+            }
+        };
         println!("{}", params);
         let bst = _train_booster(&params);
         let eval_names = bst.eval_names().unwrap();
-        assert_eq!(eval_names, vec!["auc", "acc"])
+        assert_eq!(eval_names, vec!["auc", "l1"])
     }
 
     #[test]
