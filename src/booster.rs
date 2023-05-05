@@ -4,13 +4,20 @@ use std::ffi::CString;
 
 use libc::{c_char, c_double, c_longlong, c_void};
 use lightgbm_sys;
-use serde_json::{Value};
+use serde_json::Value;
 
 use crate::{Dataset, Error, Result};
 
 /// Core model in LightGBM, containing functions for training, evaluating and predicting.
 pub struct Booster {
     handle: lightgbm_sys::BoosterHandle,
+}
+
+/// Represents the score during training on either the train or validation set
+#[derive(Debug, PartialEq)]
+pub struct EvalResult {
+    pub metric: String,
+    pub score: f64,
 }
 
 impl Booster {
@@ -101,7 +108,11 @@ impl Booster {
     ///
     /// let bst = Booster::train(train_data, val_data.ok(), &params).unwrap();
     /// ```
-    pub fn train(train_data: Dataset, val_data: Option<Dataset>, parameter: &Value) -> Result<Self> {
+    pub fn train(
+        train_data: Dataset,
+        val_data: Option<Dataset>,
+        parameter: &Value,
+    ) -> Result<Self> {
         // get num_iterations
         let num_iterations: i64 = if parameter["num_iterations"].is_null() {
             100
@@ -110,20 +121,22 @@ impl Booster {
         };
 
         // exchange params {"x": "y", "z": 1} => "x=y z=1"
+        // and {"k" = ["a", "b"]} => "k=a,b"
         let params_string = parameter
             .as_object()
             .unwrap()
             .iter()
-            .map(|(k, v)|
-             match v {
+            .map(|(k, v)| match v {
                 Value::Array(a) => {
                     let v_formatted = a.iter().map(|x| x.to_string() + ",").collect::<String>();
-                    let v_formatted = v_formatted.replace("\",\"", ",")
-                        .trim_end_matches(",").to_string();
+                    let v_formatted = v_formatted
+                        .replace("\",\"", ",")
+                        .trim_end_matches(",")
+                        .to_string();
                     (k, v_formatted)
-                },
-                _ => (k, v.to_string())
-             })
+                }
+                _ => (k, v.to_string()),
+            })
             .map(|(k, v)| format!("{}={}", k, v))
             .collect::<Vec<_>>()
             .join(" ");
@@ -260,12 +273,12 @@ impl Booster {
     /// Get names of evaluation metrics
     pub fn eval_names(&self) -> Result<Vec<String>> {
         let num_metrics = self.num_eval()?;
-        let feature_name_length = 32;
+        let metric_name_length = 32;
         let mut num_eval_names = 0;
         let mut out_buffer_len = 0;
         let out_strs = (0..num_metrics)
             .map(|_| {
-                CString::new(" ".repeat(feature_name_length))
+                CString::new(" ".repeat(metric_name_length))
                     .unwrap()
                     .into_raw() as *mut c_char
             })
@@ -274,7 +287,7 @@ impl Booster {
             self.handle,
             num_metrics as i32,
             &mut num_eval_names,
-            feature_name_length as u64,
+            metric_name_length as u64,
             &mut out_buffer_len,
             out_strs.as_ptr() as *mut *mut c_char
         ))?;
@@ -286,6 +299,22 @@ impl Booster {
         Ok(output)
     }
 
+    pub fn get_eval(&self, data_index: i32) -> Result<Vec<EvalResult>> {
+        let names = self.eval_names()?;
+        let mut out_len = 0;
+        let out_result: Vec<f64> = vec![Default::default(); names.len()];
+        lgbm_call!(lightgbm_sys::LGBM_BoosterGetEval(
+            self.handle,
+            data_index,
+            &mut out_len,
+            out_result.as_ptr() as *mut c_double
+        ))?;
+        Ok(names
+            .into_iter()
+            .zip(out_result)
+            .map(|(metric, score)| EvalResult { metric, score })
+            .collect())
+    }
 
     // Get Feature Importance
     pub fn feature_importance(&self) -> Result<Vec<f64>> {
@@ -391,7 +420,10 @@ mod tests {
     use super::*;
 
     fn _read_train_file() -> Result<Dataset> {
-        Dataset::from_file(&"lightgbm-sys/lightgbm/examples/binary_classification/binary.train")
+        Dataset::from_file(
+            &"lightgbm-sys/lightgbm/examples/binary_classification/binary.train",
+            None,
+        )
     }
 
     fn _train_booster(params: &Value) -> Booster {
@@ -443,16 +475,88 @@ mod tests {
     fn eval_names() {
         let params = json! {
             {
-                "num_iterations": 10,
+                "num_iterations": 1,
                 "objective": "binary",
-                "metric": ["auc", "l1"],
+                "metrics": ["auc", "l1"],
                 "data_random_seed": 0
             }
         };
-        println!("{}", params);
         let bst = _train_booster(&params);
         let eval_names = bst.eval_names().unwrap();
         assert_eq!(eval_names, vec!["auc", "l1"])
+    }
+
+    #[ignore]
+    #[test]
+    fn get_eval_broken() {
+        let params = json! {
+            {
+                "num_iterations": 30,
+                "objective": "binary",
+                "boosting_type": "gbdt",
+                "metrics": ["binary_logloss","auc"],
+                "label_column": 0,
+                "max_bin": 255,
+                "tree_learner": "serial",
+                "feature_fraction": 0.8,
+                "is_enable_sparse": true,
+                "data_random_seed": 0
+            }
+        };
+        let train = _read_train_file().unwrap();
+        let val = Dataset::from_file(
+            &"lightgbm-sys/lightgbm/examples/binary_classification/binary.test",
+            Some(train.handle),
+        )
+        .unwrap();
+
+        // this training segfaults at training step ffi call
+        let _bst = Booster::train(train, Some(val), &params).unwrap();
+
+        //let eval_train = bst.get_eval(0).unwrap();
+        //let eval_val = bst.get_eval(1).unwrap();
+        //let eval_invalid = bst.get_eval(420);
+        //assert!(eval_invalid.is_err());
+    }
+
+    #[test]
+    fn get_eval() {
+        let data = vec![
+            vec![1.0, 0.1, 0.2, 0.1],
+            vec![0.7, 0.4, 0.5, 0.1],
+            vec![0.9, 0.8, 0.5, 0.1],
+            vec![0.2, 0.2, 0.8, 0.7],
+            vec![0.1, 0.7, 1.0, 0.9],
+        ];
+        let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+        let train_data = Dataset::from_mat(data, label).unwrap();
+
+        let data = vec![
+            vec![0.9, 0.6, 0.2, 0.1],
+            vec![0.5, 0.7, 0.2, 0.1],
+            vec![0.2, 0.1, 0.6, 0.8],
+        ];
+        let label = vec![0.0, 0.0, 1.0];
+        let val_data = Dataset::from_mat(data, label);
+
+        let params = json! {
+           {
+                "num_iterations": 3,
+                "objective": "binary",
+                "metric": ["auc","l1"]
+            }
+        };
+
+        let bst = Booster::train(train_data, val_data.ok(), &params).unwrap();
+
+        let train_res = bst.get_eval(0).unwrap();
+        let val_res = bst.get_eval(1).unwrap();
+        let invalid_res = bst.get_eval(420);
+        assert!(invalid_res.is_err());
+        assert_eq!(train_res[0].metric, "auc");
+        assert_eq!(val_res[1].metric, "l1");
+        assert!(0.0 <= train_res[0].score && train_res[0].score <= 1.0); // make shure values make sense
+        assert!(0.0 <= train_res[1].score);
     }
 
     #[test]
