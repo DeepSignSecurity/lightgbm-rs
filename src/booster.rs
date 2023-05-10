@@ -149,7 +149,8 @@ impl Booster {
             &mut handle
         ))?;
 
-        if let Some(validation_data) = val_data {
+        // the following has to borrow val_data to avoid dropping the dataset
+        if let Some(validation_data) = &val_data {
             lgbm_call!(lightgbm_sys::LGBM_BoosterAddValidData(
                 handle,
                 validation_data.handle
@@ -486,7 +487,6 @@ mod tests {
         assert_eq!(eval_names, vec!["auc", "l1"])
     }
 
-    #[ignore]
     #[test]
     fn get_eval_broken() {
         let params = json! {
