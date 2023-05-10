@@ -149,7 +149,7 @@ impl Booster {
             &mut handle
         ))?;
 
-        if let Some(validation_data) = val_data {
+        if let Some(validation_data) = &val_data {
             lgbm_call!(lightgbm_sys::LGBM_BoosterAddValidData(
                 handle,
                 validation_data.handle
@@ -157,7 +157,7 @@ impl Booster {
         }
 
         let mut is_finished: i32 = 0;
-        for _ in 1..num_iterations {
+        for _ in 0..num_iterations {
             lgbm_call!(lightgbm_sys::LGBM_BoosterUpdateOneIter(
                 handle,
                 &mut is_finished
@@ -247,7 +247,7 @@ impl Booster {
             .collect::<Vec<_>>();
         lgbm_call!(lightgbm_sys::LGBM_BoosterGetFeatureNames(
             self.handle,
-            num_feature as i32,
+            num_feature,
             &mut num_feature_names,
             feature_name_length as u64,
             &mut out_buffer_len,
@@ -486,9 +486,8 @@ mod tests {
         assert_eq!(eval_names, vec!["auc", "l1"])
     }
 
-    #[ignore]
     #[test]
-    fn get_eval_broken() {
+    fn get_eval_samle_dataset() {
         let params = json! {
             {
                 "num_iterations": 30,
@@ -510,13 +509,14 @@ mod tests {
         )
         .unwrap();
 
-        // this training segfaults at training step ffi call
-        let _bst = Booster::train(train, Some(val), &params).unwrap();
+        let bst = Booster::train(train, Some(val), &params).unwrap();
 
-        //let eval_train = bst.get_eval(0).unwrap();
-        //let eval_val = bst.get_eval(1).unwrap();
-        //let eval_invalid = bst.get_eval(420);
-        //assert!(eval_invalid.is_err());
+        let eval_train = bst.get_eval(0);
+        let eval_val = bst.get_eval(1);
+        assert!(eval_val.is_ok());
+        assert!(eval_train.is_ok());
+        let eval_invalid = bst.get_eval(420);
+        assert!(eval_invalid.is_err());
     }
 
     #[test]
@@ -561,7 +561,8 @@ mod tests {
 
     #[test]
     fn feature_importance() {
-        let params = _default_params();
+        let mut params = _default_params();
+        params["num_iterations"] = "0".parse().unwrap();
         let bst = _train_booster(&params);
         let feature_importance = bst.feature_importance().unwrap();
         assert_eq!(feature_importance, vec![0.0; 28]);
