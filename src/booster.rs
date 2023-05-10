@@ -149,6 +149,7 @@ impl Booster {
             &mut handle
         ))?;
 
+        // the following has to borrow val_data to avoid dropping the dataset
         if let Some(validation_data) = &val_data {
             lgbm_call!(lightgbm_sys::LGBM_BoosterAddValidData(
                 handle,
@@ -487,7 +488,7 @@ mod tests {
     }
 
     #[test]
-    fn get_eval_samle_dataset() {
+    fn get_eval_sample_dataset() {
         let params = json! {
             {
                 "num_iterations": 30,
