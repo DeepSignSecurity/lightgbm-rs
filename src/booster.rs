@@ -274,29 +274,72 @@ impl Booster {
     /// Get names of evaluation metrics
     pub fn eval_names(&self) -> Result<Vec<String>> {
         let num_metrics = self.num_eval()?;
-        let metric_name_length = 32;
+
+        /////////////////////////////////////////////////////////////////////
+        // call with 0-sized buffer to find out how much space to allocate
+        /////////////////////////////////////////////////////////////////////
         let mut num_eval_names = 0;
         let mut out_buffer_len = 0;
-        let out_strs = (0..num_metrics)
-            .map(|_| {
-                CString::new(" ".repeat(metric_name_length))
-                    .unwrap()
-                    .into_raw() as *mut c_char
-            })
+
+        lgbm_call!(lightgbm_sys::LGBM_BoosterGetEvalNames(
+            self.handle,
+            0,
+            &mut num_eval_names,
+            0,
+            &mut out_buffer_len,
+            std::ptr::null_mut() as *mut *mut c_char
+        ))
+        .unwrap();
+
+        /////////////////////////////////////////////////////////////////////
+        // sanity check
+        /////////////////////////////////////////////////////////////////////
+        assert_eq!(num_eval_names, num_metrics);
+
+        /////////////////////////////////////////////////////////////////////
+        // get the actual strings
+        /////////////////////////////////////////////////////////////////////
+
+        let mut out_strs = (0..num_metrics)
+            .map(|_| (0..out_buffer_len).map(|_| 0).collect::<Vec<u8>>())
             .collect::<Vec<_>>();
+
+        let mut out_strs_pointers = out_strs
+            .iter_mut()
+            .map(|s| s.as_mut_ptr())
+            .collect::<Vec<_>>();
+
+        let metric_name_length = out_buffer_len;
+
         lgbm_call!(lightgbm_sys::LGBM_BoosterGetEvalNames(
             self.handle,
             num_metrics,
             &mut num_eval_names,
-            metric_name_length as u64,
+            metric_name_length,
             &mut out_buffer_len,
-            out_strs.as_ptr() as *mut *mut c_char
-        ))?;
-        let output: Vec<String> = out_strs
-            .into_iter()
-            .map(|s| unsafe { CString::from_raw(s).into_string().unwrap() })
-            .take(num_eval_names as usize)
-            .collect();
+            out_strs_pointers.as_mut_ptr() as *mut *mut c_char
+        ))
+        .unwrap();
+
+        drop(out_strs_pointers); // don't let pointers outlive their target
+
+        let mut output = Vec::with_capacity(out_strs.len());
+        for mut out_str in out_strs {
+            let first_null = out_str
+                .iter()
+                .enumerate()
+                .find(|(_, e)| **e == 0)
+                .map(|(i, _)| i)
+                .expect("string not null terminated, possible memory corruption");
+            out_str.truncate(first_null + 1);
+
+            let string = CString::from_vec_with_nul(out_str)
+                .expect("string memory invariant violated, possible memory corruption")
+                .into_string()
+                .map_err(|_| Error::new("name not valid UTF-8"))?;
+            output.push(string);
+        }
+
         Ok(output)
     }
 
