@@ -294,7 +294,11 @@ impl Booster {
         /////////////////////////////////////////////////////////////////////
         // sanity check
         /////////////////////////////////////////////////////////////////////
-        assert_eq!(num_eval_names, num_metrics);
+        if num_eval_names != num_metrics {
+            return Err(Error::new(format!(
+                "expected num_eval_names==num_metrics, but got {num_eval_names}!={num_metrics}. This is a bug in lightgbm or its rust wrapper"
+            )));
+        }
 
         /////////////////////////////////////////////////////////////////////
         // get the actual strings
