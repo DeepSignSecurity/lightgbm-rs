@@ -149,7 +149,7 @@ impl Booster {
             &mut handle
         ))?;
 
-        // the following has to borrow val_data to avoid dropping the dataset
+        // the following has to borrow val_data to avoid dropping the old_dataset
         if let Some(validation_data) = &val_data {
             lgbm_call!(lightgbm_sys::LGBM_BoosterAddValidData(
                 handle,
@@ -410,7 +410,7 @@ impl Booster {
 
     /// Save model to string. This returns the same content that `save_file` writes into a file.
     pub fn save_string(&self) -> Result<String> {
-        // get nessesary buffer size
+        // get necessary buffer size
 
         let mut out_size = 0_i64;
         lgbm_call!(lightgbm_sys::LGBM_BoosterSaveModelToString(
@@ -550,14 +550,19 @@ mod tests {
                 "data_random_seed": 0
             }
         };
-        let train = _read_train_file().unwrap();
+        let train = Dataset::from_file(
+            "lightgbm-sys/lightgbm/examples/binary_classification/binary.train",
+            None,
+        )
+        .unwrap();
         let val = Dataset::from_file(
-            &"lightgbm-sys/lightgbm/examples/binary_classification/binary.test",
-            Some(train.handle),
+            "lightgbm-sys/lightgbm/examples/binary_classification/binary.test",
+            Some(&train),
         )
         .unwrap();
 
         let bst = Booster::train(train, Some(val), &params).unwrap();
+        //let bst = Booster::train(train, None, &params).unwrap();
 
         let eval_train = bst.get_eval(0);
         let eval_val = bst.get_eval(1);
@@ -577,7 +582,7 @@ mod tests {
             vec![0.1, 0.7, 1.0, 0.9],
         ];
         let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
-        let train_data = Dataset::from_mat(data, label).unwrap();
+        let train_data = Dataset::from_mat(data, label, None).unwrap();
 
         let data = vec![
             vec![0.9, 0.6, 0.2, 0.1],
@@ -585,7 +590,7 @@ mod tests {
             vec![0.2, 0.1, 0.6, 0.8],
         ];
         let label = vec![0.0, 0.0, 1.0];
-        let val_data = Dataset::from_mat(data, label);
+        let val_data = Dataset::from_mat(data, label, None);
 
         let params = json! {
            {

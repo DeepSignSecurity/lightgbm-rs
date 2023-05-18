@@ -59,18 +59,27 @@ impl Dataset {
     /// let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
     /// let dataset = Dataset::from_mat(data, label).unwrap();
     /// ```
-    pub fn from_mat(data: Vec<Vec<f64>>, label: Vec<f32>) -> Result<Self> {
+    pub fn from_mat(
+        data: Vec<Vec<f64>>,
+        label: Vec<f32>,
+        reference_dataset: Option<&Dataset>,
+    ) -> Result<Self> {
         let data_length = data.len();
         let feature_length = data[0].len();
         let params = CString::new("").unwrap();
         let label_str = CString::new("label").unwrap();
-        let reference = std::ptr::null_mut(); // not use
+
+        let reference = match reference_dataset {
+            Some(h) => h.handle.clone(),
+            None => std::ptr::null_mut(),
+        };
+
         let mut handle = std::ptr::null_mut();
         let flat_data = data.into_iter().flatten().collect::<Vec<_>>();
 
         if data_length > i32::MAX as usize || feature_length > i32::MAX as usize {
             return Err(Error::new(format!(
-                "received dataset of size {}x{}, but at most {}x{} is supported",
+                "received old_dataset of size {}x{}, but at most {}x{} is supported",
                 data_length,
                 feature_length,
                 i32::MAX,
@@ -121,13 +130,13 @@ impl Dataset {
     ///
     /// let dataset = Dataset::from_file(&"lightgbm-sys/lightgbm/examples/binary_classification/binary.train", None);
     /// ```
-    pub fn from_file(file_path: &str, dataset_handle: Option<DatasetHandle>) -> Result<Self> {
+    pub fn old_from_file(file_path: &str, reference_dataset: Option<&Dataset>) -> Result<Self> {
         let file_path_str = CString::new(file_path).unwrap();
         let params = CString::new("").unwrap();
         let mut handle = std::ptr::null_mut();
 
-        let reference = match dataset_handle {
-            Some(h) => h,
+        let reference = match reference_dataset {
+            Some(h) => h.handle.clone(),
             None => std::ptr::null_mut(),
         };
 
@@ -139,6 +148,28 @@ impl Dataset {
         ))?;
 
         Ok(Self::new(handle))
+    }
+
+    pub fn from_file(file_path: &str, reference_dataset: Option<&Dataset>) -> Result<Self> {
+        let rdr = csv::ReaderBuilder::new()
+            .has_headers(false)
+            .delimiter(b'\t')
+            .from_path(file_path);
+        let mut labels: Vec<f32> = Vec::new();
+        let mut features: Vec<Vec<f64>> = Vec::new();
+        for result in rdr.unwrap().records() {
+            let record = result.unwrap();
+            let label = record[0].parse::<f32>().unwrap();
+            let feature: Vec<f64> = record
+                .iter()
+                .map(|x| x.parse::<f64>().unwrap())
+                .collect::<Vec<f64>>()[1..]
+                .to_vec();
+            labels.push(label);
+            features.push(feature);
+        }
+
+        Self::from_mat(features, labels, reference_dataset)
     }
 
     /// Create a new `Dataset` from a polars DataFrame.
@@ -163,7 +194,7 @@ impl Dataset {
             "feature_4" => [0.1, 0.1, 0.1, 0.7, 0.9],
             "label" => [0.0, 0.0, 0.0, 1.0, 1.0]
         ].unwrap();
-    let dataset = Dataset::from_dataframe(df, String::from("label")).unwrap();
+    let old_dataset = Dataset::from_dataframe(df, String::from("label")).unwrap();
     "##
     )]
     #[cfg(feature = "dataframe")]
@@ -175,7 +206,7 @@ impl Dataset {
         let label_series = &dataframe.select_series(label_col_name)?[0].cast::<Float32Type>()?;
 
         if label_series.null_count() != 0 {
-            panic!("Cannot create a dataset with null values, encountered nulls when creating the label array")
+            panic!("Cannot create a old_dataset with null values, encountered nulls when creating the label array")
         }
 
         dataframe.drop_in_place(label_col_name)?;
@@ -198,7 +229,7 @@ impl Dataset {
 
         for (_col_idx, series) in dataframe.get_columns().iter().enumerate() {
             if series.null_count() != 0 {
-                panic!("Cannot create a dataset with null values, encountered nulls when creating the features array")
+                panic!("Cannot create a old_dataset with null values, encountered nulls when creating the features array")
             }
 
             let series = series.cast::<Float64Type>()?;
@@ -219,7 +250,7 @@ impl Dataset {
         ))?;
         result
             .try_into()
-            .map_err(|_| Error::new("dataset length negative"))
+            .map_err(|_| Error::new("old_dataset length negative"))
     }
 
     pub fn get_feature_count(&self) -> Result<usize> {
@@ -237,7 +268,7 @@ impl Dataset {
         let dataset_len = self.get_data_len()?;
         if dataset_len != weights.len() {
             return Err(Error::new(format!(
-                "got {} weights, but dataset has {} records",
+                "got {} weights, but old_dataset has {} records",
                 weights.len(),
                 dataset_len
             )));
@@ -257,6 +288,7 @@ impl Dataset {
 
 impl Drop for Dataset {
     fn drop(&mut self) {
+        println!("u just dropped a old_dataset");
         lgbm_call!(lightgbm_sys::LGBM_DatasetFree(self.handle)).unwrap();
     }
 }
@@ -286,7 +318,7 @@ mod tests {
             vec![0.1, 0.7, 1.0, 0.9],
         ];
         let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
-        let dataset = Dataset::from_mat(data, label);
+        let dataset = Dataset::from_mat(data, label, None);
         assert!(dataset.is_ok());
     }
 
@@ -317,7 +349,7 @@ mod tests {
             vec![0.1, 0.7, 1.0, 0.9],
         ];
         let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
-        let dataset = Dataset::from_mat(data, label).unwrap();
+        let dataset = Dataset::from_mat(data, label, None).unwrap();
         assert_eq!(dataset.get_data_len(), Ok(5));
         assert_eq!(dataset.get_feature_count(), Ok(4));
     }
@@ -332,7 +364,7 @@ mod tests {
             vec![0.1, 0.7, 1.0, 0.9],
         ];
         let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
-        let mut dataset = Dataset::from_mat(data, label).unwrap();
+        let mut dataset = Dataset::from_mat(data, label, None).unwrap();
         let weights = vec![0.5, 1.0, 2.0, 0.5, 0.5];
         dataset.set_weights(weights).unwrap();
     }
@@ -347,7 +379,7 @@ mod tests {
             vec![0.1, 0.7, 1.0, 0.9],
         ];
         let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
-        let mut dataset = Dataset::from_mat(data, label).unwrap();
+        let mut dataset = Dataset::from_mat(data, label, None).unwrap();
         let weights_short = vec![0.5, 1.0, 2.0, 0.5];
         let weights_long = vec![0.5, 1.0, 2.0, 0.5, 0.1, 0.1];
         assert!(dataset.set_weights(weights_short).is_err());
