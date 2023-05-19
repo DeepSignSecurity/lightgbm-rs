@@ -1,8 +1,12 @@
+#[cfg(feature = "dataframe")]
+mod dataframe;
 mod ffi;
 
 use lightgbm_sys::DatasetHandle;
 #[cfg(feature = "dataframe")]
 use polars::prelude::*;
+use OutputVec;
+use {Error, InputMatrix};
 
 /// Represents an unloaded Dataset for the Booster Builder.
 /// At the fit step of the BoosterBuilder, these will be added to the
@@ -21,13 +25,13 @@ pub enum DataFormat {
         path: String,
     },
     Vecs {
-        x: Vec<Vec<f64>>,
-        y: Vec<f32>,
+        x: InputMatrix,
+        y: OutputVec,
     },
     #[cfg(feature = "dataframe")]
     DataFrame {
         df: DataFrame,
-        y_column: Into<String>,
+        y_column: String,
     },
 }
 
@@ -37,17 +41,23 @@ pub struct LoadedDataSet {
 
 impl Drop for LoadedDataSet {
     fn drop(&mut self) {
-        todo!()
+        ffi::drop_dataset(self.handle).expect("Something went wrong dropping the Dataset.");
     }
 }
 
 impl DataSet {
-    pub(crate) fn load(&self, reference: Option<DatasetHandle>) -> LoadedDataSet {
-        match &self.format {
-            DataFormat::File { path } => todo!(), //add here corresponding ffi calls
-            DataFormat::Vecs { x, y } => todo!(),
+    pub(crate) fn load(&self, reference: Option<DatasetHandle>) -> Result<LoadedDataSet> {
+        let handle = match &self.format {
+            DataFormat::File { path } => {
+                ffi::load_dataset_from_file(path, &self.params, &reference)
+            }
+            DataFormat::Vecs { x, y } => ffi::load_from_vec(x, y, &self.params, &reference),
             #[cfg(feature = "dataframe")]
-            DataFormat::DataFrame { df, y_column } => todo!(),
-        }
+            DataFormat::DataFrame { df, y_column } => {
+                let (x, y) = dataframe::dataframe_to_mat(dataframe, label_column)?;
+                ffi::load_from_vec(&x, &y, &self.params, &reference)
+            }
+        }?;
+        Ok(LoadedDataSet { handle })
     }
 }

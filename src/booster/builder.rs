@@ -81,6 +81,7 @@ impl BoosterBuilder<TrainDataAdded, ParamsAdded> {
             .map(|v| v.load(Some(train.handle)))
             .collect();
         // train classifier
+        // check callbacks (not implemented yet)
         // call train ffi from here
 
         // return
