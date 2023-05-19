@@ -4,7 +4,8 @@ mod ffi;
 
 use lightgbm_sys::DatasetHandle;
 #[cfg(feature = "dataframe")]
-use polars::prelude::*;
+use polars::prelude::DataFrame;
+
 use OutputVec;
 use {Error, InputMatrix};
 
@@ -46,16 +47,14 @@ impl Drop for LoadedDataSet {
 }
 
 impl DataSet {
-    pub(crate) fn load(&self, reference: Option<DatasetHandle>) -> Result<LoadedDataSet> {
+    pub(crate) fn load(&self, reference: &Option<DatasetHandle>) -> Result<LoadedDataSet, Error> {
         let handle = match &self.format {
-            DataFormat::File { path } => {
-                ffi::load_dataset_from_file(path, &self.params, &reference)
-            }
-            DataFormat::Vecs { x, y } => ffi::load_from_vec(x, y, &self.params, &reference),
+            DataFormat::File { path } => ffi::load_dataset_from_file(path, &self.params, reference),
+            DataFormat::Vecs { x, y } => ffi::load_from_vec(x, y, &self.params, reference),
             #[cfg(feature = "dataframe")]
             DataFormat::DataFrame { df, y_column } => {
                 let (x, y) = dataframe::dataframe_to_mat(dataframe, label_column)?;
-                ffi::load_from_vec(&x, &y, &self.params, &reference)
+                ffi::load_from_vec(&x, &y, &self.params, reference)
             }
         }?;
         Ok(LoadedDataSet { handle })

@@ -74,11 +74,11 @@ impl BoosterBuilder<TrainDataAdded, ParamsAdded> {
     ///
     /// Each of these steps can return errors.
     pub fn fit(self) -> Result<Booster, Error> {
-        let train = self.train_data.0.load(None);
+        let train = self.train_data.0.load(&None);
         let vals: Vec<_> = self
             .val_data
             .iter()
-            .map(|v| v.load(Some(train.handle)))
+            .map(|v| v.load(&train.as_ref().map(|t| t.handle).ok()))
             .collect();
         // train classifier
         // check callbacks (not implemented yet)

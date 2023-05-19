@@ -1,14 +1,14 @@
-use std::error::Error;
 use std::ffi::CString;
 
+use libc::{c_char, c_void};
 use lightgbm_sys::DatasetHandle;
 
 use dataset::LoadedDataSet;
 use {InputMatrix, OutputVec};
 
-type FfiError = crate::Error;
+use crate::error::{Error, Result};
 
-pub(crate) fn drop_dataset(handle: DatasetHandle) -> Result<(), FfiError> {
+pub(crate) fn drop_dataset(handle: DatasetHandle) -> Result<()> {
     lgbm_call!(lightgbm_sys::LGBM_DatasetFree(handle))?;
     Ok(())
 }
@@ -17,7 +17,7 @@ pub(crate) fn load_dataset_from_file(
     file_path: &str,
     dataset_params: &str,
     reference_dataset: &Option<DatasetHandle>,
-) -> Result<DatasetHandle, FfiError> {
+) -> Result<DatasetHandle> {
     let file_path_str = CString::new(file_path).unwrap();
     let params = CString::new(dataset_params).unwrap();
     let mut handle = std::ptr::null_mut();
@@ -42,7 +42,7 @@ pub(crate) fn load_from_vec(
     label: &OutputVec,
     dataset_params: &str,
     reference_dataset: &Option<DatasetHandle>,
-) -> Result<DatasetHandle, FfiError> {
+) -> Result<DatasetHandle> {
     let data_length = data.len();
     let feature_length = data[0].len();
     let params = CString::new(dataset_params).unwrap();
@@ -58,7 +58,7 @@ pub(crate) fn load_from_vec(
     let flat_data = data.into_iter().flatten().collect::<Vec<_>>();
 
     if data_length > i32::MAX as usize || feature_length > i32::MAX as usize {
-        return Err(FfiError::new(format!(
+        return Err(Error::new(format!(
             "received old_dataset of size {}x{}, but at most {}x{} is supported",
             data_length,
             feature_length,
