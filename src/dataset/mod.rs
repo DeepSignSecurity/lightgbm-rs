@@ -1,13 +1,13 @@
-#[cfg(feature = "dataframe")]
-mod dataframe;
-mod ffi;
-
 use lightgbm_sys::DatasetHandle;
 #[cfg(feature = "dataframe")]
 use polars::prelude::DataFrame;
 
 use OutputVec;
 use {Error, InputMatrix};
+
+#[cfg(feature = "dataframe")]
+mod dataframe;
+mod ffi;
 
 /// Represents an unloaded Dataset for the Booster Builder.
 /// At the fit step of the BoosterBuilder, these will be added to the

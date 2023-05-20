@@ -22,8 +22,8 @@ pub(crate) fn load_dataset_from_file(
     let params = CString::new(dataset_params).unwrap();
     let mut handle = std::ptr::null_mut();
 
-    let reference = match reference_dataset {
-        Some(h) => h.clone(),
+    let reference = match *reference_dataset {
+        Some(h) => h,
         None => std::ptr::null_mut(),
     };
 
@@ -48,14 +48,14 @@ pub(crate) fn load_from_vec(
     let params = CString::new(dataset_params).unwrap();
     let label_str = CString::new("label").unwrap();
 
-    let reference = match reference_dataset {
-        Some(h) => h.clone(),
+    let reference = match *reference_dataset {
+        Some(h) => h,
         None => std::ptr::null_mut(),
     };
 
     let mut handle = std::ptr::null_mut();
     // mhhh..... does lightgbm reserve new space or uses this one
-    let flat_data = data.into_iter().flatten().collect::<Vec<_>>();
+    let flat_data = data.iter().flatten().collect::<Vec<_>>();
 
     if data_length > i32::MAX as usize || feature_length > i32::MAX as usize {
         return Err(Error::new(format!(

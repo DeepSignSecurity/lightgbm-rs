@@ -5,7 +5,7 @@ use {InputMatrix, OutputVec};
 type FfiError = crate::Error;
 
 pub(crate) fn dataframe_to_mat(
-    &mut dataframe: DataFrame,
+    dataframe: &mut DataFrame,
     label_column: String,
 ) -> Result<(InputMatrix, OutputVec), FfiError> {
     let label_col_name = label_column.as_str();
