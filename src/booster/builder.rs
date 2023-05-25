@@ -156,37 +156,59 @@ fn parse_params(params: Value) -> Result<String, LgbmError> {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::{json, Value};
-
     use booster::Booster;
-    use dataset::{DataFormat, DataSet};
+    use dataset::DataSet;
+    use serde_json::json;
+    use {LabelVec, Matrixf64};
 
-    fn _default_params() -> Value {
-        let params = json! {
+    fn get_simple_params() -> serde_json::Value {
+        json! {
             {
-                "num_iterations": 1,
+                "num_iterations": 5,
                 "objective": "binary",
                 "metric": "auc",
                 "data_random_seed": 0
             }
-        };
-        params
+        }
+    }
+
+    fn get_dummy_data_1() -> (Matrixf64, LabelVec) {
+        let data = vec![
+            vec![1.0, 0.1, 0.2, 0.1],
+            vec![0.7, 0.4, 0.5, 0.1],
+            vec![0.9, 0.8, 0.5, 0.1],
+            vec![0.2, 0.2, 0.8, 0.7],
+            vec![0.1, 0.7, 1.0, 0.9],
+        ];
+        let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+        (data, label)
+    }
+
+    fn get_dummy_data_2() -> (Matrixf64, LabelVec) {
+        let data = vec![
+            vec![8.0, 0.2, 0.4, 0.5],
+            vec![0.9, 0.4, 0.3, 0.5],
+            vec![0.5, 0.6, 0.3, 0.8],
+            vec![0.244, 0.25, 0.9, 0.9],
+            vec![0.4, 0.8, 0.8, 0.7],
+        ];
+        let label = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+        (data, label)
     }
 
     #[test]
-    fn easy() {
-        let x = vec![vec![1.0, 1.0, 0.5], vec![1.0, 1.0, 0.5]];
-        let y = vec![0_f32, 1.0];
-        let format = DataFormat::Vecs { x, y };
-        let dataset = DataSet::new(format);
-        let (bst_low_lr, bst_high_lr) = Booster::builder().add_train_data(dataset).duplicate();
-        let _bst_low_lr = bst_low_lr
-            .add_params(_default_params())
-            .unwrap()
-            .fit()
-            .unwrap();
-        let _bst_high_lr = bst_high_lr
-            .add_params(_default_params())
+    fn simple_build_test() {
+        let (train_x, train_y) = get_dummy_data_1();
+        let (val_x, val_y) = get_dummy_data_2();
+        let params = get_simple_params();
+
+        let train_set = DataSet::from_mat(train_x, train_y);
+        let val_set = DataSet::from_mat(val_x, val_y);
+
+        let booster = Booster::builder()
+            .add_train_data(train_set)
+            .add_val_data(val_set)
+            .add_params(params)
             .unwrap()
             .fit()
             .unwrap();

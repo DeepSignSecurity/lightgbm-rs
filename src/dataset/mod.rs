@@ -28,6 +28,11 @@ impl DataSet {
             params: "".to_string(),
         }
     }
+
+    pub fn from_mat(x: Matrixf64, y: LabelVec) -> Self {
+        let f = DataFormat::Vecs { x, y };
+        Self::new(f)
+    }
 }
 
 /// Represents the different Formats for datasets, that can be loaded into lightgbm.
