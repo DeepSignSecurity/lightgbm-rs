@@ -54,13 +54,13 @@ pub(crate) fn get_num_classes(booster: BoosterHandle) -> Result<i32> {
 pub(crate) fn predict(
     booster: BoosterHandle,
     prediction_params: &str,
-    data: InputMatrix,
+    data: &InputMatrix,
 ) -> Result<InputMatrix> {
     let data_length = data.len();
     let feature_length = data[0].len();
     let params = CString::new(prediction_params)?;
     let mut out_length: c_longlong = 0;
-    let flat_data = data.into_iter().flatten().collect::<Vec<_>>();
+    let flat_data = data.clone().into_iter().flatten().collect::<Vec<_>>();
     let num_classes = get_num_classes(booster)?;
     let out_result: Vec<f64> = vec![Default::default(); data_length * num_classes as usize];
 

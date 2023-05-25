@@ -21,7 +21,7 @@ pub struct Booster {
     validation_data: Vec<LoadedDataSet>,
 }
 
-// exchange params method aswell? does this make sense?
+// exchange params method as well? does this make sense?
 impl Booster {
     /// Returns a builder. At least training data and params need to be added,
     /// so that the model can be fitted (built).
@@ -30,11 +30,12 @@ impl Booster {
     }
 
     /// Generates a prediction for a given Input.
-    ///
+    /// The Output has the same dimensions as the input,
+    /// because this returns class probabilities.
     /// Can return an Error if the input or model is corrupt.
-    pub fn predict(&self, x: &InputMatrix) -> Result<OutputVec, LgbmError> {
-        let _ = x[0][0] + 1_f64; // silence warning for now
-        todo!()
+    pub fn predict(&self, x: &InputMatrix) -> Result<InputMatrix, LgbmError> {
+        let prediction_params = ""; // do we need this?
+        ffi::predict(self.handle, prediction_params, x)
     }
 
     /// Returns the scores for the train and validation set.
@@ -51,8 +52,8 @@ impl Booster {
         let mut i = 0;
         while is_finished == 0 && i < max_iterations {
             // callback stuff here
-            ffi::train_one_step(self.handle, &mut is_finished)?
-            i+=1;
+            ffi::train_one_step(self.handle, &mut is_finished)?;
+            i += 1;
         }
         Ok(())
     }
