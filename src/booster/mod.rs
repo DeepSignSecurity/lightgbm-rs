@@ -46,11 +46,13 @@ impl Booster {
     }
 
     /// this should take &mut self, because it changes the model
-    pub(crate) fn train_loop(&mut self) -> Result<(), LgbmError> {
+    pub(crate) fn train_loop(&mut self, max_iterations: i32) -> Result<(), LgbmError> {
         let mut is_finished = 0;
-        while is_finished == 0 {
+        let mut i = 0;
+        while is_finished == 0 && i < max_iterations {
             // callback stuff here
             ffi::train_one_step(self.handle, &mut is_finished)?
+            i+=1;
         }
         Ok(())
     }

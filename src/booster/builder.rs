@@ -101,7 +101,7 @@ impl BoosterBuilder<TrainDataAdded, ParamsAdded> {
             train_data: Some(train_data),
             validation_data: validation_sets,
         };
-        booster.train_loop()?;
+        booster.train_loop(self.params["num_iterations"])?; // param parsing checked already if present
         Ok(booster)
     }
 
