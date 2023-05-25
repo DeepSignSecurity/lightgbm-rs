@@ -205,12 +205,19 @@ mod tests {
         let train_set = DataSet::from_mat(train_x, train_y);
         let val_set = DataSet::from_mat(val_x, val_y);
 
-        let _booster = Booster::builder()
+        let booster = Booster::builder()
             .add_train_data(train_set)
             .add_val_data(val_set)
             .add_params(params)
             .unwrap()
             .fit()
             .unwrap();
+
+        let result_train = booster.get_eval_result_for_dataset(0).unwrap();
+        let result_val = booster.get_eval_result_for_dataset(1).unwrap();
+        assert!(booster.get_eval_result_for_dataset(2).is_err());
+
+        assert_eq!(result_train.len(), 1);
+        assert_eq!(result_val.len(), 1);
     }
 }
