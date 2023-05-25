@@ -3,7 +3,7 @@ use std::ffi::CString;
 use libc::{c_char, c_void};
 use lightgbm_sys::DatasetHandle;
 
-use {InputMatrix, OutputVec};
+use {LabelVec, Matrixf64};
 
 use crate::error::{LgbmError, Result};
 
@@ -37,8 +37,8 @@ pub(crate) fn load_dataset_from_file(
 }
 
 pub(crate) fn load_from_vec(
-    data: &InputMatrix,
-    label: &OutputVec,
+    data: &Matrixf64,
+    label: &LabelVec,
     dataset_params: &str,
     reference_dataset: Option<DatasetHandle>,
 ) -> Result<DatasetHandle> {

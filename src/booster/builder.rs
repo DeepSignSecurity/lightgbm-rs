@@ -3,7 +3,7 @@ use serde_json::Value;
 use booster::Booster;
 use dataset::DataSet;
 use {booster, LgbmError};
-use {InputMatrix, OutputVec};
+use {LabelVec, Matrixf64};
 
 /////////////////////////////////////////////
 // types for training set
@@ -16,7 +16,7 @@ pub struct TrainDataMissing;
 /////////////////////////////////////////////
 // types for params
 #[derive(Clone)]
-pub struct ParamsAdded(String); // this should not implement default, so it can safely be used for construction
+pub struct ParamsAdded(String, i32); // this should not implement default, so it can safely be used for construction
 #[derive(Default, Clone)]
 pub struct ParamsMissing;
 /////////////////////////////////////////////
@@ -48,9 +48,14 @@ impl<T: Clone> BoosterBuilder<T, ParamsMissing> {
     /// Adds params to the Booster.
     /// Returns Error, if param parsing returns Error.
     pub fn add_params(self, params: Value) -> Result<BoosterBuilder<T, ParamsAdded>, LgbmError> {
+        let num_iterations = params
+            .get("num_iterations")
+            .ok_or(LgbmError::new("Num iterations in params missing."))?
+            .as_i64()
+            .ok_or(LgbmError::new("Invalid Value for num iterations."))?;
         let parsed_params = parse_params(params)?;
         Ok(BoosterBuilder {
-            params: ParamsAdded(parsed_params),
+            params: ParamsAdded(parsed_params, num_iterations as i32),
             train_data: self.train_data,
             val_data: self.val_data,
         })
@@ -101,14 +106,14 @@ impl BoosterBuilder<TrainDataAdded, ParamsAdded> {
             train_data: Some(train_data),
             validation_data: validation_sets,
         };
-        booster.train_loop(self.params["num_iterations"])?; // param parsing checked already if present
+        booster.train_loop(self.params.1)?; // param parsing checked already if present
         Ok(booster)
     }
 
     /// Build the Booster with fit and immediately predict for the given input.
     /// Can Fail in fit if the Booster isn't correctly build or in predict if the Input Data
     /// is corrupted.
-    pub fn fit_predict(self, x: &InputMatrix) -> Result<(Booster, OutputVec), LgbmError> {
+    pub fn fit_predict(self, x: &Matrixf64) -> Result<(Booster, Matrixf64), LgbmError> {
         let booster = self.fit()?;
         let y = booster.predict(x)?;
         Ok((booster, y))

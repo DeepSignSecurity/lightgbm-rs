@@ -2,8 +2,8 @@ use lightgbm_sys::DatasetHandle;
 #[cfg(feature = "dataframe")]
 use polars::prelude::DataFrame;
 
-use OutputVec;
-use {InputMatrix, LgbmError};
+use LabelVec;
+use {LgbmError, Matrixf64};
 
 #[cfg(feature = "dataframe")]
 mod dataframe;
@@ -38,8 +38,8 @@ pub enum DataFormat {
         path: String,
     },
     Vecs {
-        x: InputMatrix,
-        y: OutputVec,
+        x: Matrixf64,
+        y: LabelVec,
     },
     #[cfg(feature = "dataframe")]
     DataFrame {

@@ -2,8 +2,8 @@ extern crate libc;
 extern crate lightgbm_sys;
 extern crate serde_json;
 
-type InputMatrix = Vec<Vec<f64>>;
-type OutputVec = Vec<f32>;
+type Matrixf64 = Vec<Vec<f64>>;
+type LabelVec = Vec<f32>;
 
 extern crate alloc;
 #[cfg(feature = "dataframe")]

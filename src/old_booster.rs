@@ -608,7 +608,7 @@ mod tests {
         assert!(invalid_res.is_err());
         assert_eq!(train_res[0].metric, "auc");
         assert_eq!(val_res[1].metric, "l1");
-        assert!(0.0 <= train_res[0].score && train_res[0].score <= 1.0); // make shure values make sense
+        assert!(0.0 <= train_res[0].score && train_res[0].score <= 1.0); // make sure values make sense
         assert!(0.0 <= train_res[1].score);
     }
 

@@ -1,13 +1,13 @@
 use polars::prelude::{DataFrame, Float32Type, Float64Type, PolarsError};
 
-use {InputMatrix, OutputVec};
+use {LabelVec, Matrixf64};
 
 type FfiError = crate::LgbmError;
 
 pub(crate) fn dataframe_to_mat(
     dataframe: &mut DataFrame,
     label_column: &str,
-) -> Result<(InputMatrix, OutputVec), FfiError> {
+) -> Result<(Matrixf64, LabelVec), FfiError> {
     let label_col_name = label_column.as_str();
     let (m, n) = dataframe.shape();
     let label_series = &dataframe.select_series(label_col_name)?[0].cast::<Float32Type>()?;
