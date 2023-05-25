@@ -1,7 +1,7 @@
 use booster::builder::{BoosterBuilder, ParamsMissing, TrainDataMissing};
-use dataset::{LoadedDataSet};
+use dataset::LoadedDataSet;
 use LgbmError;
-use {Matrixf64};
+use Matrixf64;
 
 mod builder;
 mod ffi;

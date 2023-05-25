@@ -2,8 +2,8 @@ use serde_json::Value;
 
 use booster::Booster;
 use dataset::DataSet;
+use Matrixf64;
 use {booster, LgbmError};
-use {Matrixf64};
 
 /////////////////////////////////////////////
 // types for training set
