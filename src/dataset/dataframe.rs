@@ -2,11 +2,11 @@ use polars::prelude::{DataFrame, Float32Type, Float64Type, PolarsError};
 
 use {InputMatrix, OutputVec};
 
-type FfiError = crate::Error;
+type FfiError = crate::LgbmError;
 
 pub(crate) fn dataframe_to_mat(
     dataframe: &mut DataFrame,
-    label_column: String,
+    label_column: &str,
 ) -> Result<(InputMatrix, OutputVec), FfiError> {
     let label_col_name = label_column.as_str();
     let (m, n) = dataframe.shape();
