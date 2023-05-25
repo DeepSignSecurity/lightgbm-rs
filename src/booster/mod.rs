@@ -89,6 +89,12 @@ impl Booster {
      }*/
 }
 
+impl Drop for Booster {
+    fn drop(&mut self) {
+        ffi::free_booster(self.handle).expect("Something went wrong dropping the Booster.");
+    }
+}
+
 #[cfg(test)]
 mod tests {
 

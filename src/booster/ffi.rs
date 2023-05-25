@@ -17,6 +17,9 @@ pub(crate) fn new_booster(train_data: DatasetHandle, parsed_params: &str) -> Res
     ))?;
     Ok(handle)
 }
+pub(crate) fn free_booster(handle: BoosterHandle) -> Result<()> {
+    lgbm_call!(lightgbm_sys::LGBM_BoosterFree(handle))
+}
 
 pub(crate) fn add_validation_data_to_booster(
     booster: BoosterHandle,
