@@ -220,4 +220,48 @@ mod tests {
         assert_eq!(result_train.len(), 1);
         assert_eq!(result_val.len(), 1);
     }
+
+    #[test]
+    fn more_params() {
+        let params = json! {
+            {
+                "num_iterations": 30,
+                "objective": "binary",
+                "boosting_type": "gbdt",
+                "metrics": ["binary_logloss","auc"],
+                "label_column": 0,
+                "max_bin": 255,
+                "tree_learner": "serial",
+                "feature_fraction": 0.8,
+                "is_enable_sparse": true,
+                "data_random_seed": 0
+            }
+        };
+        let (train_x, train_y) = get_dummy_data_1();
+        let (val_x, val_y) = get_dummy_data_2();
+
+        let train_set = DataSet::from_mat(train_x, train_y);
+        let val_set = DataSet::from_mat(val_x, val_y);
+        let val_set_2 = val_set.clone();
+
+        let booster = Booster::builder()
+            .add_train_data(train_set)
+            .add_val_data(val_set)
+            .add_val_data(val_set_2)
+            .add_params(params)
+            .unwrap()
+            .fit()
+            .unwrap();
+
+        let result_train = booster.get_eval_result_for_dataset(0).unwrap();
+        let result_val_1 = booster.get_eval_result_for_dataset(1).unwrap();
+        let result_val_2 = booster.get_eval_result_for_dataset(2).unwrap();
+        assert!(booster.get_eval_result_for_dataset(3).is_err());
+
+        assert_eq!(result_train.len(), 2);
+        assert_eq!(result_val_1.len(), 2);
+        assert_eq!(result_val_2.len(), 2);
+        let delta = (result_val_1[0].score - result_val_2[0].score).abs(); // floating point error
+        assert!(0.0 < delta && delta < 0.0001);
+    }
 }
