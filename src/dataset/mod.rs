@@ -72,8 +72,8 @@ impl DataSet {
             DataFormat::File { path } => ffi::load_dataset_from_file(path, &self.params, reference),
             DataFormat::Vecs { x, y } => ffi::load_from_vec(x, y, &self.params, reference),
             #[cfg(feature = "dataframe")]
-            DataFormat::DataFrame { mut df, y_column } => {
-                let (x, y) = dataframe::dataframe_to_mat(&mut df, y_column)?;
+            DataFormat::DataFrame { df, y_column } => {
+                let (x, y) = dataframe::dataframe_to_mat(&mut df.clone(), y_column)?;
                 ffi::load_from_vec(&x, &y, &self.params, reference)
             }
         }?;
