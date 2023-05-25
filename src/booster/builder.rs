@@ -205,7 +205,7 @@ mod tests {
         let train_set = DataSet::from_mat(train_x, train_y);
         let val_set = DataSet::from_mat(val_x, val_y);
 
-        let booster = Booster::builder()
+        let _booster = Booster::builder()
             .add_train_data(train_set)
             .add_val_data(val_set)
             .add_params(params)
