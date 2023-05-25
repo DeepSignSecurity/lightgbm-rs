@@ -3,7 +3,7 @@ use serde_json::Value;
 use booster::Booster;
 use dataset::DataSet;
 use {booster, LgbmError};
-use {LabelVec, Matrixf64};
+use {Matrixf64};
 
 /////////////////////////////////////////////
 // types for training set
