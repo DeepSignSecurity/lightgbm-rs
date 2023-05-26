@@ -61,14 +61,14 @@ impl<T: Clone, P: Clone> BoosterBuilder<T, P> {
     ///                 "data_random_seed": 42
     ///             }
     ///         };
-    /// let x = vec![
-    ///             vec![1.0, 0.1, 0.2, 0.1],
-    ///             vec![0.7, 0.4, 0.5, 0.1],
-    ///             vec![0.9, 0.8, 0.5, 0.1],
-    ///             vec![0.2, 0.2, 0.8, 0.7],
-    ///             vec![0.1, 0.7, 1.0, 0.9]];
-    /// let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
-    /// let train_data = DataSet::from_mat(x,y);
+    /// # let x = vec![
+    /// #             vec![1.0, 0.1, 0.2, 0.1],
+    /// #             vec![0.7, 0.4, 0.5, 0.1],
+    /// #             vec![0.9, 0.8, 0.5, 0.1],
+    /// #             vec![0.2, 0.2, 0.8, 0.7],
+    /// #             vec![0.1, 0.7, 1.0, 0.9]];
+    /// # let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// # let train_data = DataSet::from_mat(x,y);
     /// let (booster_low_it, booster_high_it) = Booster::builder()
     ///     .add_train_data(train_data)
     ///     .duplicate();

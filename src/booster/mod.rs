@@ -3,7 +3,7 @@ use dataset::LoadedDataSet;
 use LgbmError;
 use Matrixf64;
 
-mod builder;
+pub mod builder;
 mod ffi;
 
 /// Evaluation Result of a Booster on a given Dataset.
@@ -111,7 +111,7 @@ impl Booster {
     ///     .add_params(params)?
     ///     .fit()?;
     /// let predict_params = "predict_raw_score=true";
-    /// let pred = booster.predict(&input)?;
+    /// # let pred = booster.predict(&input)?;
     /// let pred_raw = booster.predict_with_params(&input, predict_params)?;
     ///
     /// # Ok(())}
