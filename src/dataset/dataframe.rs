@@ -48,4 +48,33 @@ pub(crate) fn dataframe_to_mat(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use dataset::dataframe::dataframe_to_mat;
+    use polars::df;
+    use polars::prelude::*;
+
+    #[test]
+    fn simple_df() {
+        let mut df: DataFrame = df![
+            "feature_1" => [1.0, 0.7, 0.9, 0.2, 0.1],
+            "feature_2" => [0.1, 0.4, 0.8, 0.2, 0.7],
+            "feature_3" => [0.2, 0.5, 0.5, 0.1, 0.1],
+            "feature_4" => [0.1, 0.1, 0.1, 0.7, 0.9],
+           "label" => [0.0, 0.0, 0.0, 1.0, 1.0]
+        ]
+        .unwrap();
+        let label_column = "label";
+        let (x, y) = dataframe_to_mat(&mut df, label_column).unwrap();
+
+        let recovered_feature: Vec<f64> = df
+            .column("feature_1")
+            .unwrap()
+            .f64()
+            .unwrap()
+            .into_iter()
+            .map(|o| o.unwrap())
+            .collect();
+
+        assert_eq!(recovered_feature[0], x[0][0]);
+    }
+}
