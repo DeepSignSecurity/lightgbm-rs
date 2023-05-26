@@ -9,14 +9,15 @@ mod ffi;
 /// Evaluation Result of a Booster on a given Dataset.
 /// Returned by get_eval
 pub struct EvalResult {
-    metric_name: String,
-    score: f64,
+    pub metric_name: String,
+    pub score: f64,
 }
 
 /// Class that is returned by the builder, once fit() is called.
 /// Used to interact with a trained booster.
 pub struct Booster {
     handle: lightgbm_sys::BoosterHandle,
+    #[allow(dead_code)]
     train_data: Option<LoadedDataSet>, // dont drop datasets
     validation_data: Vec<LoadedDataSet>,
 }
@@ -30,11 +31,19 @@ impl Booster {
     }
 
     /// Generates a prediction for a given Input.
-    /// The Output has the same dimensions as the input,
-    /// because this returns class probabilities.
+    /// Output dimensions depend on booster task.
     /// Can return an Error if the input or model is corrupt.
     pub fn predict(&self, x: &Matrixf64) -> Result<Matrixf64, LgbmError> {
         let prediction_params = ""; // do we need this?
+        self.predict_with_params(x, prediction_params)
+    }
+
+    /// Predict with additional params
+    pub fn predict_with_params(
+        &self,
+        x: &Matrixf64,
+        prediction_params: &str,
+    ) -> Result<Matrixf64, LgbmError> {
         ffi::predict(self.handle, prediction_params, x)
     }
 

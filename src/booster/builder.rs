@@ -38,6 +38,48 @@ impl<T: Clone, P: Clone> BoosterBuilder<T, P> {
     /// only a couple differences. This should be called at the end of the adapter chain,
     /// where u defined all things that are equal in the models.
     /// U can then continue to build the models separately.
+    ///
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// use lightgbm::dataset::DataSet;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// let params_a = serde_json::json! {
+    ///             {
+    ///                 "num_iterations": 5,
+    ///                 "objective": "binary",
+    ///                 "metric": "auc",
+    ///                 "data_random_seed": 0
+    ///             }
+    ///         };
+    /// let params_b = serde_json::json! {
+    ///             {
+    ///                 "num_iterations": 100,
+    ///                 "objective": "binary",
+    ///                 "metric": "acc",
+    ///                 "data_random_seed": 42
+    ///             }
+    ///         };
+    /// let x = vec![
+    ///             vec![1.0, 0.1, 0.2, 0.1],
+    ///             vec![0.7, 0.4, 0.5, 0.1],
+    ///             vec![0.9, 0.8, 0.5, 0.1],
+    ///             vec![0.2, 0.2, 0.8, 0.7],
+    ///             vec![0.1, 0.7, 1.0, 0.9]];
+    /// let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// let train_data = DataSet::from_mat(x,y);
+    /// let (booster_low_it, booster_high_it) = Booster::builder()
+    ///     .add_train_data(train_data)
+    ///     .duplicate();
+    /// let booster_low_it = booster_low_it
+    ///     .add_params(params_a)?
+    ///     .fit()?;
+    /// let booster_high_it = booster_high_it
+    ///     .add_params(params_b)?
+    ///     .fit()?;
+    /// # Ok(())}
+    /// ```
     pub fn duplicate(self) -> (Self, Self) {
         (self.clone(), self)
     }
@@ -47,6 +89,23 @@ impl<T: Clone, P: Clone> BoosterBuilder<T, P> {
 impl<T: Clone> BoosterBuilder<T, ParamsMissing> {
     /// Adds params to the Booster.
     /// Returns Error, if param parsing returns Error.
+    ///
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// let params = serde_json::json! {
+    ///             {
+    ///                 "num_iterations": 5,
+    ///                 "objective": "binary",
+    ///                 "metric": "auc",
+    ///                 "data_random_seed": 0
+    ///             }
+    ///         };
+    /// let booster_builder = Booster::builder().add_params(params)?;
+    /// # Ok(())}
+    /// ```
     pub fn add_params(self, params: Value) -> Result<BoosterBuilder<T, ParamsAdded>, LgbmError> {
         let num_iterations = params
             .get("num_iterations")
@@ -66,6 +125,35 @@ impl<T: Clone> BoosterBuilder<T, ParamsMissing> {
 impl<P: Clone> BoosterBuilder<TrainDataMissing, P> {
     /// Adds training data. necessary for validation data (so bins can be synced)
     /// and for model fitting.
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// use lightgbm::dataset::DataSet;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// let params = serde_json::json! {
+    ///             {
+    ///                 "num_iterations": 5,
+    ///                 "objective": "binary",
+    ///                 "metric": "auc",
+    ///                 "data_random_seed": 0
+    ///             }
+    ///         };
+    /// let x = vec![
+    ///             vec![1.0, 0.1, 0.2, 0.1],
+    ///             vec![0.7, 0.4, 0.5, 0.1],
+    ///             vec![0.9, 0.8, 0.5, 0.1],
+    ///             vec![0.2, 0.2, 0.8, 0.7],
+    ///             vec![0.1, 0.7, 1.0, 0.9]];
+    /// let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// let train_data = DataSet::from_mat(x,y);
+    /// let booster = Booster::builder()
+    ///     .add_train_data(train_data)
+    ///     .add_params(params)?
+    ///     .fit()?;
+    ///    
+    /// # Ok(())}
+    /// ```
     pub fn add_train_data(self, train: DataSet) -> BoosterBuilder<TrainDataAdded, P> {
         BoosterBuilder {
             train_data: TrainDataAdded(train),
@@ -78,6 +166,45 @@ impl<P: Clone> BoosterBuilder<TrainDataMissing, P> {
 /// Methods in this impl Block require, that training data is already added.
 impl<P: Clone> BoosterBuilder<TrainDataAdded, P> {
     /// Adds validation data to the Booster.
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// use lightgbm::dataset::DataSet;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// let params = serde_json::json! {
+    ///             {
+    ///                 "num_iterations": 5,
+    ///                 "objective": "binary",
+    ///                 "metric": "auc",
+    ///                 "data_random_seed": 0
+    ///             }
+    ///         };
+    /// let x = vec![
+    ///             vec![1.0, 0.1, 0.2, 0.1],
+    ///             vec![0.7, 0.4, 0.5, 0.1],
+    ///             vec![0.9, 0.8, 0.5, 0.1],
+    ///             vec![0.2, 0.2, 0.8, 0.7],
+    ///             vec![0.1, 0.7, 1.0, 0.9]];
+    /// let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// let train_data = DataSet::from_mat(x,y);
+    /// let x = vec![
+    ///             vec![8.0, 0.2, 0.4, 0.5],
+    ///             vec![0.9, 0.4, 0.3, 0.5],
+    ///             vec![0.5, 0.6, 0.3, 0.8],
+    ///             vec![0.244, 0.25, 0.9, 0.9],
+    ///             vec![0.4, 0.8, 0.8, 0.7],
+    ///         ];
+    /// let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// let validation_data = DataSet::from_mat(x,y);
+    /// let booster = Booster::builder()
+    ///     .add_train_data(train_data)    // add training data first
+    ///     .add_val_data(validation_data) // then validation data
+    ///     .add_params(params)?
+    ///     .fit()?;
+    ///    
+    /// # Ok(())}
+    /// ```
     pub fn add_val_data(mut self, val: DataSet) -> Self {
         self.val_data.push(val);
         self
@@ -92,6 +219,46 @@ impl BoosterBuilder<TrainDataAdded, ParamsAdded> {
     /// 3. Training with the params
     ///
     /// Each of these steps can fail and return errors.
+    ///
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// use lightgbm::dataset::DataSet;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// let params = serde_json::json! {
+    ///             {
+    ///                 "num_iterations": 5,
+    ///                 "objective": "binary",
+    ///                 "metric": "auc",
+    ///                 "data_random_seed": 0
+    ///             }
+    ///         };
+    /// let x = vec![
+    ///             vec![1.0, 0.1, 0.2, 0.1],
+    ///             vec![0.7, 0.4, 0.5, 0.1],
+    ///             vec![0.9, 0.8, 0.5, 0.1],
+    ///             vec![0.2, 0.2, 0.8, 0.7],
+    ///             vec![0.1, 0.7, 1.0, 0.9]];
+    /// let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// let train_data = DataSet::from_mat(x,y);
+    /// let x = vec![
+    ///             vec![8.0, 0.2, 0.4, 0.5],
+    ///             vec![0.9, 0.4, 0.3, 0.5],
+    ///             vec![0.5, 0.6, 0.3, 0.8],
+    ///             vec![0.244, 0.25, 0.9, 0.9],
+    ///             vec![0.4, 0.8, 0.8, 0.7],
+    ///         ];
+    /// let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// let validation_data = DataSet::from_mat(x,y);
+    /// let booster = Booster::builder()
+    ///     .add_train_data(train_data)     // this is necessary
+    ///     .add_val_data(validation_data)  // this is optional
+    ///     .add_params(params)?            // this is also necessary
+    ///     .fit()?;
+    ///    
+    /// # Ok(())}
+    /// ```
     pub fn fit(self) -> Result<Booster, LgbmError> {
         let train_data = self.train_data.0.load(None)?;
         let booster_handle = booster::ffi::new_booster(train_data.handle, &self.params.0)?;
@@ -113,6 +280,44 @@ impl BoosterBuilder<TrainDataAdded, ParamsAdded> {
     /// Build the Booster with fit and immediately predict for the given input.
     /// Can Fail in fit if the Booster isn't correctly build or in predict if the Input Data
     /// is corrupted.
+    ///
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// use lightgbm::dataset::DataSet;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// let params = serde_json::json! {
+    ///             {
+    ///                 "num_iterations": 5,
+    ///                 "objective": "binary",
+    ///                 "metric": "auc",
+    ///                 "data_random_seed": 0
+    ///             }
+    ///         };
+    /// let x = vec![
+    ///             vec![1.0, 0.1, 0.2, 0.1],
+    ///             vec![0.7, 0.4, 0.5, 0.1],
+    ///             vec![0.9, 0.8, 0.5, 0.1],
+    ///             vec![0.2, 0.2, 0.8, 0.7],
+    ///             vec![0.1, 0.7, 1.0, 0.9]];
+    /// let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// let train_data = DataSet::from_mat(x,y);
+    /// let input = vec![
+    ///             vec![8.0, 0.2, 0.4, 0.5],
+    ///             vec![0.9, 0.4, 0.3, 0.5],
+    ///             vec![0.5, 0.6, 0.3, 0.8],
+    ///             vec![0.244, 0.25, 0.9, 0.9],
+    ///             vec![0.4, 0.8, 0.8, 0.7],
+    ///         ];
+    /// let (booster, pred) = Booster::builder()
+    ///     .add_train_data(train_data)     
+    ///     .add_params(params)?
+    ///     .fit_predict(&input)?;
+    ///
+    /// assert_eq!(input.len(), pred[0].len()); // binary classification. One output value for each input vec
+    /// # Ok(())}
+    /// ```
     pub fn fit_predict(self, x: &Matrixf64) -> Result<(Booster, Matrixf64), LgbmError> {
         let booster = self.fit()?;
         let y = booster.predict(x)?;
@@ -122,10 +327,10 @@ impl BoosterBuilder<TrainDataAdded, ParamsAdded> {
 
 /// Transforms a serde_json Value object into a String that Lightgbm Requires. Note that a conversion
 /// to a CString is still required for the ffi.
-/// The algorithms thransforms data like this:
-/// {"x": "y", "z": 1} => "x=y z=1"
+/// The algorithms transforms data like this:
+/// {"x": "y", "z": 1} => "x="y" z=1"
 /// and
-/// {"k" = ["a", "b"]} => "k=a,b"
+/// {"k" = ["a", "b"]} => "k="a,b""
 /// Returns Error if the Value object somehow doesn't represents valid json, or the num_iterations
 /// param is not set.
 fn parse_params(params: Value) -> Result<String, LgbmError> {
@@ -156,6 +361,7 @@ fn parse_params(params: Value) -> Result<String, LgbmError> {
 
 #[cfg(test)]
 mod tests {
+    use booster::builder::parse_params;
     use booster::Booster;
     use dataset::DataSet;
     use serde_json::json;
@@ -263,5 +469,34 @@ mod tests {
         assert_eq!(result_val_2.len(), 2);
         let delta = (result_val_1[0].score - result_val_2[0].score).abs(); // floating point error
         assert!(0.0 < delta && delta < 0.0001);
+    }
+
+    #[test]
+    fn params_test_valid() {
+        let params = json! {
+            {
+                "num_iterations": 30,
+                "objective": "binary",
+                "metrics": ["binary_logloss","auc"],
+                "is_enable_sparse": true
+            }
+        };
+        let supposed_to_be =
+            "is_enable_sparse=true metrics=\"binary_logloss,auc\" num_iterations=30 objective=\"binary\"";
+        let parsed = parse_params(params).unwrap();
+
+        assert_eq!(&parsed, supposed_to_be);
+    }
+
+    #[test]
+    fn params_num_it_missing() {
+        let params = json! {
+            {
+                "objective": "binary",
+                "metrics": ["binary_logloss","auc"],
+                "is_enable_sparse": true
+            }
+        };
+        assert!(parse_params(params).is_err());
     }
 }

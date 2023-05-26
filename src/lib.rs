@@ -18,5 +18,5 @@ macro_rules! lgbm_call {
 mod error;
 pub use error::{LgbmError, Result};
 
-mod booster;
-mod dataset;
+pub mod booster;
+pub mod dataset;
