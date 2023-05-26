@@ -61,9 +61,10 @@ impl DataSet {
     /// that contains the labels for the sample. The rest are features.
     /// ```
     /// use lightgbm::dataset::DataSet;
-    /// use polars::prelude::*;
-    /// # fn main() -> Result<()> {     
-    ///     
+    /// use polars::df;
+    /// use polars::prelude::{DataFrame, Result};
+    ///
+    /// # fn main() -> Result<()> {
     /// let df: DataFrame = df![
     ///             "feature_1" => [1.0, 0.7, 0.9, 0.2, 0.1],
     ///             "feature_2" => [0.1, 0.4, 0.8, 0.2, 0.7],
