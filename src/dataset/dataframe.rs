@@ -46,3 +46,6 @@ pub(crate) fn dataframe_to_mat(
     }
     Ok((feature_values, label_values))
 }
+
+#[cfg(test)]
+mod tests {}
