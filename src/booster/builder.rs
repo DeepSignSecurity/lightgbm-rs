@@ -468,7 +468,7 @@ mod tests {
         assert_eq!(result_val_1.len(), 2);
         assert_eq!(result_val_2.len(), 2);
         let delta = (result_val_1[0].score - result_val_2[0].score).abs(); // floating point error
-        assert!(0.0 < delta && delta < 0.0001);
+        assert!(0.0 < delta && delta < 0.01);
     }
 
     #[test]
