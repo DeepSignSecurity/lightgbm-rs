@@ -60,6 +60,7 @@ impl DataSet {
     /// The label column corresponds to the column in the DataFrame,
     /// that contains the labels for the sample. The rest are features.
     /// ```
+    /// extern crate polars;
     /// use lightgbm::dataset::DataSet;
     /// use polars::df;
     /// use polars::prelude::{DataFrame, Result};
