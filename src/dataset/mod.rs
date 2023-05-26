@@ -62,24 +62,24 @@ impl DataSet {
     #[cfg_attr(
         feature = "dataframe",
         doc = r##"
-     extern crate polars;
-     use lightgbm::dataset::DataSet;
-     use polars::df;
-     use polars::prelude::{DataFrame, Result};
+    ```
+    extern crate polars;
+    use lightgbm::dataset::DataSet;
+    use polars::df;
+    use polars::prelude::{DataFrame, Result};
     
-     # fn main() -> Result<()> {
-     let df: DataFrame = df![
-                 "feature_1" => [1.0, 0.7, 0.9, 0.2, 0.1],
-                 "feature_2" => [0.1, 0.4, 0.8, 0.2, 0.7],
-                 "feature_3" => [0.2, 0.5, 0.5, 0.1, 0.1],
-                 "feature_4" => [0.1, 0.1, 0.1, 0.7, 0.9],
-                 "label" => [0.0, 0.0, 0.0, 1.0, 1.0]
-             ]?;
-         let label_column = "label".into();
-         let dataset = DataSet::from_data_frame(df, label_column);
+    # fn main() -> Result<()> {
+    let df: DataFrame = df![
+                "feature_1" => [1.0, 0.7, 0.9, 0.2, 0.1],
+                "feature_2" => [0.1, 0.4, 0.8, 0.2, 0.7],
+                "feature_3" => [0.2, 0.5, 0.5, 0.1, 0.1],
+                "feature_4" => [0.1, 0.1, 0.1, 0.7, 0.9],
+               "label" => [0.0, 0.0, 0.0, 1.0, 1.0]
+            ]?;
+        let label_column = "label".into();
+        let dataset = DataSet::from_data_frame(df, label_column);
     # Ok(())}
-
-        "##
+    ```"##
     )]
     #[cfg(feature = "dataframe")]
     pub fn from_data_frame(df: DataFrame, label_column: impl Into<String>) -> Self {
