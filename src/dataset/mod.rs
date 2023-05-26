@@ -29,8 +29,58 @@ impl DataSet {
         }
     }
 
+    /// Create a Dataset from a Matrix and label Vector.
+    ///
+    /// ```
+    /// use lightgbm::dataset::DataSet;
+    ///
+    /// let x = vec![vec![0.3,0.4,0.8],vec![0.3,0.4,0.5]];
+    /// let y = vec![0.0,1.0];
+    /// let dataset = DataSet::from_mat(x, y);
+    /// ```
     pub fn from_mat(x: Matrixf64, y: LabelVec) -> Self {
         let f = DataFormat::Vecs { x, y };
+        Self::new(f)
+    }
+
+    /// Create a Dataset from a File Path.
+    /// Does not check if the given Path is valid.
+    /// This happens during Booster building.
+    /// ```
+    /// use lightgbm::dataset::DataSet;
+    ///
+    /// let dataset = DataSet::from_file("some/file.txt");
+    /// ```
+    pub fn from_file(path: impl Into<String>) -> Self {
+        let f = DataFormat::File { path: path.into() };
+        Self::new(f)
+    }
+
+    /// Creates a Dataset from a DataFrame.
+    /// The label column corresponds to the column in the DataFrame,
+    /// that contains the labels for the sample. The rest are features.
+    /// ```
+    /// use lightgbm::dataset::DataSet;
+    /// use polars::prelude::*;
+    /// # fn main() -> Result<()> {     
+    ///     
+    /// let df: DataFrame = df![
+    ///             "feature_1" => [1.0, 0.7, 0.9, 0.2, 0.1],
+    ///             "feature_2" => [0.1, 0.4, 0.8, 0.2, 0.7],
+    ///             "feature_3" => [0.2, 0.5, 0.5, 0.1, 0.1],
+    ///             "feature_4" => [0.1, 0.1, 0.1, 0.7, 0.9],
+    ///             "label" => [0.0, 0.0, 0.0, 1.0, 1.0]
+    ///         ]?;
+    ///     let label_column = "label".into();
+    ///     let dataset = DataSet::from_data_frame(df, label_column);
+    /// # Ok(())}
+    /// ```
+    #[cfg(feature = "dataframe")]
+    pub fn from_data_frame(df: DataFrame, label_column: impl Into<String>) -> Self {
+        let f = DataFormat::DataFrame {
+            df,
+            y_column: label_column.into(),
+        };
         Self::new(f)
     }
 }
