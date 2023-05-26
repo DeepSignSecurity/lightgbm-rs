@@ -33,12 +33,89 @@ impl Booster {
     /// Generates a prediction for a given Input.
     /// Output dimensions depend on booster task.
     /// Can return an Error if the input or model is corrupt.
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// # use lightgbm::dataset::DataSet;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// # let params = serde_json::json! {
+    /// #             {
+    /// #                 "num_iterations": 5,
+    /// #                 "objective": "binary",
+    /// #                 "metric": "auc",
+    /// #                 "data_random_seed": 0
+    /// #             }
+    /// #         };
+    /// # let x = vec![
+    /// #             vec![1.0, 0.1, 0.2, 0.1],
+    /// #             vec![0.7, 0.4, 0.5, 0.1],
+    /// #             vec![0.9, 0.8, 0.5, 0.1],
+    /// #             vec![0.2, 0.2, 0.8, 0.7],
+    /// #             vec![0.1, 0.7, 1.0, 0.9]];
+    /// # let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// # let train_data = DataSet::from_mat(x,y);
+    /// # let input = vec![
+    /// #             vec![8.0, 0.2, 0.4, 0.5],
+    /// #             vec![0.9, 0.4, 0.3, 0.5],
+    /// #             vec![0.5, 0.6, 0.3, 0.8],
+    /// #             vec![0.244, 0.25, 0.9, 0.9],
+    /// #             vec![0.4, 0.8, 0.8, 0.7],
+    /// #         ];
+    /// let booster = Booster::builder()
+    ///     .add_train_data(train_data)     
+    ///     .add_params(params)?
+    ///     .fit()?;
+    /// let pred = booster.predict(&input)?;
+    ///
+    /// assert_eq!(input.len(), pred[0].len()); // binary classification. One output value for each input vec
+    /// # Ok(())}
+    /// ```
     pub fn predict(&self, x: &Matrixf64) -> Result<Matrixf64, LgbmError> {
         let prediction_params = ""; // do we need this?
         self.predict_with_params(x, prediction_params)
     }
 
     /// Predict with additional params
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// # use lightgbm::dataset::DataSet;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// # let params = serde_json::json! {
+    /// #             {
+    /// #                 "num_iterations": 5,
+    /// #                 "objective": "binary",
+    /// #                 "metric": "auc",
+    /// #                 "data_random_seed": 0
+    /// #             }
+    /// #         };
+    /// # let x = vec![
+    /// #             vec![1.0, 0.1, 0.2, 0.1],
+    /// #             vec![0.7, 0.4, 0.5, 0.1],
+    /// #             vec![0.9, 0.8, 0.5, 0.1],
+    /// #             vec![0.2, 0.2, 0.8, 0.7],
+    /// #             vec![0.1, 0.7, 1.0, 0.9]];
+    /// # let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// # let train_data = DataSet::from_mat(x,y);
+    /// # let input = vec![
+    /// #             vec![8.0, 0.2, 0.4, 0.5],
+    /// #             vec![0.9, 0.4, 0.3, 0.5],
+    /// #             vec![0.5, 0.6, 0.3, 0.8],
+    /// #             vec![0.244, 0.25, 0.9, 0.9],
+    /// #             vec![0.4, 0.8, 0.8, 0.7],
+    /// #         ];
+    /// let booster = Booster::builder()
+    ///     .add_train_data(train_data)     
+    ///     .add_params(params)?
+    ///     .fit()?;
+    /// let predict_params = "predict_raw_score=true";
+    /// let pred = booster.predict(&input)?;
+    /// let pred_raw = booster.predict_with_params(&input, predict_params)?;
+    ///
+    /// # Ok(())}
+    /// ```
     pub fn predict_with_params(
         &self,
         x: &Matrixf64,
@@ -53,6 +130,44 @@ impl Booster {
     /// 2 = 2. Validation Dataset
     /// ...
     /// n = nth Validation Dataset
+    /// ```
+    /// use lightgbm::booster::Booster;
+    /// # use lightgbm::dataset::DataSet;
+    /// # use lightgbm::LgbmError;
+    ///
+    /// # fn main() -> Result<(), LgbmError> {
+    /// # let params = serde_json::json! {
+    /// #             {
+    /// #                 "num_iterations": 5,
+    /// #                 "objective": "binary",
+    /// #                 "metric": "auc",
+    /// #                 "data_random_seed": 0
+    /// #             }
+    /// #         };
+    /// # let x = vec![
+    /// #             vec![1.0, 0.1, 0.2, 0.1],
+    /// #             vec![0.7, 0.4, 0.5, 0.1],
+    /// #             vec![0.9, 0.8, 0.5, 0.1],
+    /// #             vec![0.2, 0.2, 0.8, 0.7],
+    /// #             vec![0.1, 0.7, 1.0, 0.9]];
+    /// # let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+    /// # let train_data = DataSet::from_mat(x,y);
+    /// # let input = vec![
+    /// #             vec![8.0, 0.2, 0.4, 0.5],
+    /// #             vec![0.9, 0.4, 0.3, 0.5],
+    /// #             vec![0.5, 0.6, 0.3, 0.8],
+    /// #             vec![0.244, 0.25, 0.9, 0.9],
+    /// #             vec![0.4, 0.8, 0.8, 0.7],
+    /// #         ];
+    /// let booster = Booster::builder()
+    ///     .add_train_data(train_data)     
+    ///     .add_params(params)?
+    ///     .fit()?;
+    /// let pred = booster.predict(&input)?;
+    /// let eval = booster.get_eval_result_for_dataset(0); // train data
+    ///
+    /// # Ok(())}
+    /// ```
     pub fn get_eval_result_for_dataset(
         &self,
         dataset_index: i32,
