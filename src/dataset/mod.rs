@@ -139,3 +139,48 @@ impl DataSet {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use dataset::DataSet;
+
+    #[test]
+    fn load_from_mat() {
+        let x = vec![
+            vec![1.0, 0.1, 0.2, 0.1],
+            vec![0.7, 0.4, 0.5, 0.1],
+            vec![0.9, 0.8, 0.5, 0.1],
+            vec![0.2, 0.2, 0.8, 0.7],
+            vec![0.1, 0.7, 1.0, 0.9],
+        ];
+        let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
+        let train_data = DataSet::from_mat(x, y);
+        let data = train_data.load(None).unwrap();
+    }
+
+    #[test]
+    fn load_from_file() {
+        let path = "lightgbm-sys/lightgbm/examples/binary_classification/binary.test";
+        let data = DataSet::from_file(path).load(None).unwrap();
+    }
+
+    #[test]
+    #[cfg(feature = "dataframe")]
+    fn load_from_df() {
+        use polars::df;
+        use polars::prelude::*;
+
+        let mut df: DataFrame = df![
+            "feature_1" => [1.0, 0.7, 0.9, 0.2, 0.1],
+            "feature_2" => [0.1, 0.4, 0.8, 0.2, 0.7],
+            "feature_3" => [0.2, 0.5, 0.5, 0.1, 0.1],
+            "feature_4" => [0.1, 0.1, 0.1, 0.7, 0.9],
+           "label" => [0.0, 0.0, 0.0, 1.0, 1.0]
+        ]
+        .unwrap();
+        let label_column = "label";
+        let data = DataSet::from_data_frame(df, label_column)
+            .load(None)
+            .unwrap();
+    }
+}
