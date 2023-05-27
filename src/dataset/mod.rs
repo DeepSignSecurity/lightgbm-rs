@@ -155,13 +155,13 @@ mod tests {
         ];
         let y = vec![0.0, 0.0, 0.0, 1.0, 1.0];
         let train_data = DataSet::from_mat(x, y);
-        let data = train_data.load(None).unwrap();
+        let _data = train_data.load(None).unwrap();
     }
 
     #[test]
     fn load_from_file() {
         let path = "lightgbm-sys/lightgbm/examples/binary_classification/binary.test";
-        let data = DataSet::from_file(path).load(None).unwrap();
+        let _data = DataSet::from_file(path).load(None).unwrap();
     }
 
     #[test]
