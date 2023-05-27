@@ -2,21 +2,21 @@ extern crate libc;
 extern crate lightgbm_sys;
 extern crate serde_json;
 
+type Matrixf64 = Vec<Vec<f64>>;
+type LabelVec = Vec<f32>;
+
+extern crate alloc;
 #[cfg(feature = "dataframe")]
 extern crate polars;
 
-#[macro_use]
 macro_rules! lgbm_call {
     ($x:expr) => {
-        Error::check_return_value(unsafe { $x })
+        LgbmError::check_return_value(unsafe { $x })
     };
 }
 
 mod error;
-pub use error::{Error, Result};
+pub use error::{LgbmError, Result};
 
-mod dataset;
-pub use dataset::Dataset;
-
-mod booster;
-pub use booster::Booster;
+pub mod booster;
+pub mod dataset;

@@ -1,0 +1,89 @@
+use std::ffi::CString;
+
+use libc::{c_char, c_void};
+use lightgbm_sys::DatasetHandle;
+
+use {LabelVec, Matrixf64};
+
+use crate::error::{LgbmError, Result};
+
+pub(crate) fn drop_dataset(handle: DatasetHandle) -> Result<()> {
+    lgbm_call!(lightgbm_sys::LGBM_DatasetFree(handle))?;
+    Ok(())
+}
+
+pub(crate) fn load_dataset_from_file(
+    file_path: &str,
+    dataset_params: &str,
+    reference_dataset: Option<DatasetHandle>,
+) -> Result<DatasetHandle> {
+    let file_path_str = CString::new(file_path).unwrap();
+    let params = CString::new(dataset_params).unwrap();
+    let mut handle = std::ptr::null_mut();
+
+    let reference = match reference_dataset {
+        Some(h) => h,
+        None => std::ptr::null_mut(),
+    };
+
+    lgbm_call!(lightgbm_sys::LGBM_DatasetCreateFromFile(
+        file_path_str.as_ptr() as *const c_char,
+        params.as_ptr() as *const c_char,
+        reference,
+        &mut handle
+    ))?;
+
+    Ok(handle)
+}
+
+pub(crate) fn load_from_vec(
+    data: &Matrixf64,
+    label: &LabelVec,
+    dataset_params: &str,
+    reference_dataset: Option<DatasetHandle>,
+) -> Result<DatasetHandle> {
+    let data_length = data.len();
+    let feature_length = data[0].len();
+    let params = CString::new(dataset_params).unwrap();
+    let label_str = CString::new("label").unwrap();
+
+    let reference = match reference_dataset {
+        Some(h) => h,
+        None => std::ptr::null_mut(),
+    };
+
+    let mut handle = std::ptr::null_mut();
+    // mhhh..... does lightgbm reserve new space or uses this one
+    let flat_data = data.iter().flatten().collect::<Vec<_>>();
+
+    if data_length > i32::MAX as usize || feature_length > i32::MAX as usize {
+        return Err(LgbmError::new(format!(
+            "received old_dataset of size {}x{}, but at most {}x{} is supported",
+            data_length,
+            feature_length,
+            i32::MAX,
+            i32::MAX
+        )));
+    }
+
+    lgbm_call!(lightgbm_sys::LGBM_DatasetCreateFromMat(
+        flat_data.as_ptr() as *const c_void,
+        lightgbm_sys::C_API_DTYPE_FLOAT64 as i32,
+        data_length as i32,
+        feature_length as i32,
+        1_i32,
+        params.as_ptr() as *const c_char,
+        reference,
+        &mut handle
+    ))?;
+
+    lgbm_call!(lightgbm_sys::LGBM_DatasetSetField(
+        handle,
+        label_str.as_ptr() as *const c_char,
+        label.as_ptr() as *const c_void,
+        data_length as i32,
+        lightgbm_sys::C_API_DTYPE_FLOAT32 as i32
+    ))?;
+
+    Ok(handle)
+}

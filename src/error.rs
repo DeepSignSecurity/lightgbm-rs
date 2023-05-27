@@ -1,7 +1,7 @@
 //! Functionality related to errors and error handling.
 
 use std::error;
-use std::ffi::CStr;
+use std::ffi::{CStr, NulError};
 use std::fmt::{self, Debug, Display};
 
 use lightgbm_sys;
@@ -10,15 +10,15 @@ use lightgbm_sys;
 use polars::prelude::*;
 
 /// Convenience return type for most operations which can return an `LightGBM`.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, LgbmError>;
 
 /// Wrap errors returned by the LightGBM library.
 #[derive(Debug, Eq, PartialEq)]
-pub struct Error {
+pub struct LgbmError {
     desc: String,
 }
 
-impl Error {
+impl LgbmError {
     pub(crate) fn new<S: Into<String>>(desc: S) -> Self {
         Self { desc: desc.into() }
     }
@@ -44,16 +44,24 @@ impl Error {
     }
 }
 
-impl error::Error for Error {}
+impl error::Error for LgbmError {}
 
-impl Display for Error {
+impl Display for LgbmError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "LightGBM error: {}", &self.desc)
     }
 }
 
+impl From<NulError> for LgbmError {
+    fn from(_: NulError) -> Self {
+        Self {
+            desc: "Null Byte found within String".into(),
+        }
+    }
+}
+
 #[cfg(feature = "dataframe")]
-impl From<PolarsError> for Error {
+impl From<PolarsError> for LgbmError {
     fn from(pe: PolarsError) -> Self {
         Self {
             desc: pe.to_string(),
@@ -67,10 +75,10 @@ mod tests {
 
     #[test]
     fn return_value_handling() {
-        let result = Error::check_return_value(0);
+        let result = LgbmError::check_return_value(0);
         assert_eq!(result, Ok(()));
 
-        let result = Error::check_return_value(-1);
-        assert_eq!(result, Err(Error::new("Everything is fine")));
+        let result = LgbmError::check_return_value(-1);
+        assert_eq!(result, Err(LgbmError::new("Everything is fine")));
     }
 }
