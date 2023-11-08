@@ -189,7 +189,7 @@ impl Booster {
             self.handle,
             num_feature as i32,
             &mut num_feature_names,
-            feature_name_length as u64,
+            feature_name_length,
             &mut out_buffer_len,
             out_strs.as_ptr() as *mut *mut c_char
         ))?;
