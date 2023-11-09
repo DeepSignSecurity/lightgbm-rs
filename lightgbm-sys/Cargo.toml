@@ -7,11 +7,37 @@ license = "MIT"
 repository = "https://github.com/vaaaaanquish/LightGBM"
 description = "Native bindings to the LightGBM library"
 readme = "README.md"
-exclude = ["README.md", ".gitlab-ci.yml", ".hgeol", ".gitignore", ".appveyor.yml", ".coveralls.yml", ".travis.yml", ".github", ".gitmodules", ".nuget", "**/*.md", "lightgbm/compute/doc", "lightgbm/compute/example", "lightgbm/compute/index.html", "lightgbm/compute/perf", "lightgbm/compute/test", "lightgbm/eigen/debug", "lightgbm/eigen/demos", "lightgbm/eigen/doc", "lightgbm/eigen/failtest", "lightgbm/eigen/test", "lightgbm/examples", "lightgbm/external_libs/fast_double_parser/benchmarks", "lightgbm/external_libs/fmt/doc", "lightgbm/external_libs/fmt/test"]
+exclude = [
+    "README.md",
+    ".gitlab-ci.yml",
+    ".hgeol",
+    ".gitignore",
+    ".appveyor.yml",
+    ".coveralls.yml",
+    ".travis.yml",
+    ".github",
+    ".gitmodules",
+    ".nuget",
+    "**/*.md",
+    "lightgbm/compute/doc",
+    "lightgbm/compute/example",
+    "lightgbm/compute/index.html",
+    "lightgbm/compute/perf",
+    "lightgbm/compute/test",
+    "lightgbm/eigen/debug",
+    "lightgbm/eigen/demos",
+    "lightgbm/eigen/doc",
+    "lightgbm/eigen/failtest",
+    "lightgbm/eigen/test",
+    "lightgbm/examples",
+    "lightgbm/external_libs/fast_double_parser/benchmarks",
+    "lightgbm/external_libs/fmt/doc",
+    "lightgbm/external_libs/fmt/test",
+]
 
 [dependencies]
 libc = "0.2.81"
 
 [build-dependencies]
-bindgen = "0.56.0"
+bindgen = "0.69.1"
 cmake = "0.1"
