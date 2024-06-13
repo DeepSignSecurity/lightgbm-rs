@@ -1,5 +1,6 @@
 use libc::{c_char, c_void};
 use lightgbm_sys;
+use lightgbm_sys::DatasetHandle;
 use std;
 use std::convert::TryInto;
 use std::ffi::CString;
@@ -32,7 +33,7 @@ use crate::{Error, Result};
 /// ```
 /// use lightgbm::Dataset;
 ///
-/// let dataset = Dataset::from_file(&"lightgbm-sys/lightgbm/examples/binary_classification/binary.train").unwrap();
+/// let dataset = Dataset::from_file(&"lightgbm-sys/lightgbm/examples/binary_classification/binary.train", None).unwrap();
 /// ```
 pub struct Dataset {
     pub(crate) handle: lightgbm_sys::DatasetHandle,
@@ -112,21 +113,28 @@ impl Dataset {
     /// 0 0.1 0.9 1.0
     /// ```
     ///
+    /// You can provide a Dataset Handle to align bin mappers between Datasets
+    ///
     /// Example
     /// ```
     /// use lightgbm::Dataset;
     ///
-    /// let dataset = Dataset::from_file(&"lightgbm-sys/lightgbm/examples/binary_classification/binary.train");
+    /// let dataset = Dataset::from_file(&"lightgbm-sys/lightgbm/examples/binary_classification/binary.train", None);
     /// ```
-    pub fn from_file(file_path: &str) -> Result<Self> {
+    pub fn from_file(file_path: &str, dataset_handle: Option<DatasetHandle>) -> Result<Self> {
         let file_path_str = CString::new(file_path).unwrap();
         let params = CString::new("").unwrap();
         let mut handle = std::ptr::null_mut();
 
+        let reference = match dataset_handle {
+            Some(h) => h,
+            None => std::ptr::null_mut(),
+        };
+
         lgbm_call!(lightgbm_sys::LGBM_DatasetCreateFromFile(
             file_path_str.as_ptr() as *const c_char,
             params.as_ptr() as *const c_char,
-            std::ptr::null_mut(),
+            reference,
             &mut handle
         ))?;
 
@@ -257,7 +265,10 @@ impl Drop for Dataset {
 mod tests {
     use super::*;
     fn read_train_file() -> Result<Dataset> {
-        Dataset::from_file(&"lightgbm-sys/lightgbm/examples/binary_classification/binary.train")
+        Dataset::from_file(
+            &"lightgbm-sys/lightgbm/examples/binary_classification/binary.train",
+            None,
+        )
     }
 
     #[test]

@@ -63,7 +63,7 @@ fn main() -> std::io::Result<()> {
         }
     };
 
-    let booster = Booster::train(train_dataset, &params).unwrap();
+    let booster = Booster::train(train_dataset, None, &params).unwrap();
     let result = booster.predict(test_features).unwrap();
 
     let mut tp = 0;
